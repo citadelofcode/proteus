@@ -20,5 +20,6 @@
 # Go workspace file
 go.work
 
+project-sparrow
 .DS_STORE
 Files/
