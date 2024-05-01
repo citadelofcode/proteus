@@ -1,5 +1,3 @@
-# Project Sparrow
+# Proteus
 
-<img align="right" width="159px" src="https://mkbalaji.pages.dev/project-sparrow/sparrow-logo.jpeg" alt="Project Sparrow">
-
-A simple and reliable web server framework creating using Go.
+A versatile web server framework creating using Golang. 
