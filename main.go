@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"github.com/maheshkumaarbalaji/project-sparrow/lib/http"
+	"github.com/maheshkumaarbalaji/proteus-connect/lib/http"
 )
 
 func main() {

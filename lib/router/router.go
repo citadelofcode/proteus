@@ -4,7 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
-	"github.com/maheshkumaarbalaji/project-sparrow/lib/fs"
+	"github.com/maheshkumaarbalaji/proteus-connect/lib/fs"
 )
 
 type FileRoutes map[string]string

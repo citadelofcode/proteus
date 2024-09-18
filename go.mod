@@ -1,3 +1,3 @@
-module github.com/maheshkumaarbalaji/project-sparrow
+module github.com/maheshkumaarbalaji/proteus-connect
 
 go 1.22.1
