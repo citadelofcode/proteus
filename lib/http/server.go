@@ -29,7 +29,7 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 
 func (srv * HttpServer) Listen(PortNumber int) {
 	if PortNumber == 0 {
-		srv.PortNumber = getRandomPort()
+		srv.PortNumber = DEFAULT_PORT;
 	} else {
 		srv.PortNumber = PortNumber
 	}

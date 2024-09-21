@@ -7,7 +7,9 @@ Proteus is a versatile web server framework written using Go. Currently, this fr
 To build and run the project, execute the following commands on project root directory.
 
 ```bash
-# Below command builds the project and generates the output executable file. The name of the executable file is main.out by default. If you want a different name, you can define it with the -o flag.
+# Below command builds the project and generates the output executable file.
+# The name of the executable file is main.out by default. 
+# If you want a different name, you can build it with the -o flag.
 go build -o proteus.out
 
 # Below command runs the executable file.
