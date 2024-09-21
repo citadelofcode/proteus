@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"math/rand/v2"
 )
 
 func NewRequest(Connection net.Conn) *HttpRequest {
@@ -41,14 +40,6 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 	server.PortNumber = 0
 
 	return &server, nil
-}
-
-func getRandomPort() int {
-	PortNumber := rand.IntN(65536)
-	if PortNumber < 10000 {
-		PortNumber = PortNumber + 10000
-	}
-	return PortNumber
 }
 
 func getRfc1123Time() string {
