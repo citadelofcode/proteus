@@ -1,6 +1,6 @@
-# Proteus Connect
+# Proteus
 
-This project aims to build a versatile web server framework with Go. This framework will support HTTP/1.0 and HTTP/1.1 requests.
+Proteus is a versatile web server framework written using Go. Currently, this framework supports HTTP/1.0 requests.
 
 ## Running the project
 

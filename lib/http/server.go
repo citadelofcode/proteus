@@ -4,8 +4,8 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"github.com/maheshkumaarbalaji/proteus-connect/lib/fs"
-	"github.com/maheshkumaarbalaji/proteus-connect/lib/router"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/maheshkumaarbalaji/proteus/lib/router"
 )
 
 type HttpServer struct {
