@@ -19,7 +19,6 @@ type HttpResponse struct {
 }
 
 func (res *HttpResponse) Initialize() {
-	res.SetVersion(MAX_VERSION)
 	res.Headers = make(Headers)
 	res.AddGeneralHeaders()
 	res.AddResponseHeaders()

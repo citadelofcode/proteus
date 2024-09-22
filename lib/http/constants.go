@@ -8,7 +8,6 @@ const (
 	HEADER_LINE_SEPERATOR = "\r\n"
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
-	MAX_VERSION = "1.0"
 	GET_METHOD = "GET"
 	POST_METHOD = "POST"
 	HEAD_METHOD = "HEAD"
@@ -18,5 +17,3 @@ const (
 	FILE_TYPE_PATH = "File"
 	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*$"
 )
-
-var COMPATIBLE_VERSIONS = []string {"1.0", "1.1"}

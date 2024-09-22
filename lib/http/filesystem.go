@@ -29,7 +29,7 @@ func GetPathType(TargetPath string) (string, error) {
 	}
 }
 
-func GetFileContents(CompleteFilePath string) ([]byte, error) {
+func readFileContents(CompleteFilePath string) ([]byte, error) {
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
 	if err != nil {

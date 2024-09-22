@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"io"
 	"regexp"
 	"encoding/json"
 )
@@ -42,18 +41,23 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 	
 	server.PortNumber = 0
 	server.AllowedContentTypes = make(map[string]string)
-	ctFile, err := os.Open("./assets/contenttypes.json")
-	if err != nil {
-		return nil, err;
-	}
-	
-	defer ctFile.Close()
-	fileContents, err := io.ReadAll(ctFile)
+	fileContents, err := readFileContents("./assets/contenttypes.json")
 	if err != nil {
 		return nil, err
 	}
 
 	err = json.Unmarshal(fileContents, &server.AllowedContentTypes)
+	if err != nil {
+		return nil, err
+	}
+
+	server.HttpCompatibility = Compatibility{}
+	fileContents, err = readFileContents("./assets/compatibility.json")
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(fileContents, &server.HttpCompatibility)
 	if err != nil {
 		return nil, err
 	}
@@ -67,22 +71,6 @@ func getRfc1123Time() string {
 
 func getW3CLogLine(req *HttpRequest, res *HttpResponse, ClientAddress string) string {
 	return fmt.Sprintf("%s %s %s %d %s", ClientAddress, req.Method, req.ResourcePath, res.StatusCode, req.Version)
-}
-
-func getResponseVersion(requestVersion string) string {
-	isCompatible := false
-	for _, version := range COMPATIBLE_VERSIONS {
-		if strings.EqualFold(version, requestVersion) {
-			isCompatible = true
-			break
-		}
-	}
-
-	if isCompatible {
-		return requestVersion
-	} else {
-		return MAX_VERSION
-	}
 }
 
 func validateRoute(Route string) bool {

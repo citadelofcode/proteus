@@ -16,6 +16,7 @@ type HttpServer struct {
 	SrvLogger *log.Logger
 	StaticRouter FileRoutes
 	AllowedContentTypes map[string]string
+	HttpCompatibility Compatibility
 }
 
 func (srv *HttpServer) Static(Route string, TargetPath string) {
@@ -68,7 +69,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		return
 	}
 
-	responseVersion := getResponseVersion(httpRequest.Version)
+	responseVersion := srv.getResponseVersion(httpRequest.Version)
 
 	switch httpRequest.Method {
 	case GET_METHOD:
@@ -158,11 +159,27 @@ func (srv *HttpServer) getFile(CompleteFilePath string) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileContents, err := GetFileContents(CompleteFilePath)
+	fileContents, err := readFileContents(CompleteFilePath)
 	if err != nil {
 		return nil, err
 	}
 	file.Contents = fileContents
 	file.ContentType = contentType
 	return &file, nil
+}
+
+func (srv *HttpServer) getResponseVersion(requestVersion string) string {
+	isCompatible := false
+	for _, version := range srv.HttpCompatibility.getAllVersions() {
+		if strings.EqualFold(version, requestVersion) {
+			isCompatible = true
+			break
+		}
+	}
+
+	if isCompatible {
+		return requestVersion
+	} else {
+		return srv.HttpCompatibility.getHighestVersion()
+	}
 }

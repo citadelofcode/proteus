@@ -22,7 +22,6 @@ type HttpRequest struct {
 
 func (req *HttpRequest) Initialize() {
 	req.Body = make([]byte, 0)
-	req.Version = MAX_VERSION
 	req.Headers = make(Headers)
 }
 
