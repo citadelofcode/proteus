@@ -4,8 +4,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
-	"github.com/maheshkumaarbalaji/proteus/lib/router"
 )
 
 type HttpServer struct {
@@ -13,12 +11,12 @@ type HttpServer struct {
 	PortNumber int
 	Socket net.Listener
 	SrvLogger *log.Logger
-	StaticRouter router.FileRoutes
+	StaticRouter FileRoutes
 }
 
 func (srv *HttpServer) Static(Route string, TargetPath string) {
 	if srv.StaticRouter == nil {
-		srv.StaticRouter = make(router.FileRoutes)
+		srv.StaticRouter = make(FileRoutes)
 	}
 	err := srv.StaticRouter.Add(Route, TargetPath)
 	if err != nil {
@@ -77,7 +75,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
-		file, err := fs.GetFile(TargetFilePath)
+		file, err := GetFile(TargetFilePath)
 		if err != nil {
 			srv.logError(err.Error())
 			httpResponse.Set(StatusInternalServerError, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusInternalServerError.GetErrorContent())
@@ -99,7 +97,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
-		file, err := fs.GetFile(TargetFilePath)
+		file, err := GetFile(TargetFilePath)
 		if err != nil {
 			srv.logError(err.Error())
 			httpResponse.Set(StatusInternalServerError, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusInternalServerError.GetErrorContent())

@@ -75,7 +75,12 @@ func (req *HttpRequest) readHeader() error {
 			}
 			req.Method = strings.TrimSpace(RequestLineParts[0])
 			req.ResourcePath = strings.TrimSpace(RequestLineParts[1])
-			req.Version = strings.TrimSpace(RequestLineParts[2])
+			tempVersion := strings.TrimSpace(RequestLineParts[2])
+			tempVersion, found := strings.CutPrefix(tempVersion, "HTTP/")
+			if !found {
+				return errors.New("invalid value for HTTP Version in request line")
+			}
+			req.Version = strings.TrimSpace(tempVersion) 
 			RequestLineProcessed = true
 		} else {
 			HeaderKey, HeaderValue, found := strings.Cut(message, HEADER_KEY_VALUE_SEPERATOR)
