@@ -37,7 +37,7 @@ func (srv * HttpServer) Listen(PortNumber int) {
 		srv.PortNumber = PortNumber
 	}
 	serverAddress := srv.HostAddress + ":" + strconv.Itoa(srv.PortNumber)
-	server, err := net.Listen(SERVER_TYPE, serverAddress)
+	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
 		srv.SrvLogger.Printf("Error occurred while setting up listener socket: %s", err.Error())
 		return
@@ -72,7 +72,13 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	responseVersion := srv.getResponseVersion(httpRequest.Version)
 
 	switch httpRequest.Method {
-	case GET_METHOD:
+	case "GET":
+		if !srv.HttpCompatibility.isMethodAllowed(responseVersion, "GET") {
+			srv.logError("'GET' method is not allowed in HTTP version " + responseVersion)
+			httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
+			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
+			return
+		}
 		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
 		if !staticRouteExists {
 			srv.logError("A Static route matching the given resource does  not exist")
@@ -94,7 +100,13 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			httpResponse.Set(StatusNotModified, responseVersion, file.ContentType, make([]byte, 0))
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 		}
-	case HEAD_METHOD:
+	case "HEAD":
+		if !srv.HttpCompatibility.isMethodAllowed(responseVersion, "HEAD") {
+			srv.logError("'HEAD' method is not allowed in HTTP version " + responseVersion)
+			httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
+			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
+			return
+		}
 		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
 		if !staticRouteExists {
 			srv.logError("A Static route matching the given resource does  not exist")
@@ -112,9 +124,9 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpResponse.Set(StatusOK, responseVersion, file.ContentType, make([]byte, 0))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	default:
-		srv.logError("The HTTP method is not allowed by the server. Allowed Methods are - " + ALLOWED_METHODS)
+		srv.logError("The HTTP method is not allowed by the server. Allowed Methods are - " + srv.HttpCompatibility.getAllowedMethods(responseVersion))
 		httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
-		httpResponse.Headers.Add("Allow", ALLOWED_METHODS)
+		httpResponse.Headers.Add("Allow", srv.HttpCompatibility.getAllowedMethods(responseVersion))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	}
 }

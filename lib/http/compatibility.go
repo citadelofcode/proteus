@@ -33,3 +33,27 @@ func (cy *Compatibility) getHighestVersion() string {
 
 	return "";
 }
+
+func (cy *Compatibility) getAllowedMethods(version string) string {
+	for _, ver := range cy.Versions {
+		if strings.EqualFold(ver.VersionNumber, version) {
+			return strings.Join(ver.AllowedMethods, ", ")
+		}
+	}
+
+	return ""
+}
+
+func (cy *Compatibility) isMethodAllowed(version string, reqMethod string) bool {
+	for _, ver := range cy.Versions {
+		if strings.EqualFold(ver.VersionNumber, version) {
+			for _, method := range ver.AllowedMethods {
+				if strings.EqualFold(method, reqMethod) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
