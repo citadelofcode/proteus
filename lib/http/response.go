@@ -19,7 +19,6 @@ type HttpResponse struct {
 }
 
 func (res *HttpResponse) Initialize() {
-	res.SetVersion(MAX_VERSION)
 	res.Headers = make(Headers)
 	res.AddGeneralHeaders()
 	res.AddResponseHeaders()
@@ -107,7 +106,7 @@ func (res *HttpResponse) writeStatusLine() error {
 		return errors.New("error occurred while writing response status line: Protocol version not set")
 	}
 
-	_, err := res.writer.WriteString(fmt.Sprintf("%s %d %s%s", res.Version, res.StatusCode, res.StatusMessage, HEADER_LINE_SEPERATOR))
+	_, err := res.writer.WriteString(fmt.Sprintf("HTTP/%s %d %s%s", res.Version, res.StatusCode, res.StatusMessage, HEADER_LINE_SEPERATOR))
 	if err != nil {
 		return errors.New("error occurred while writing response status line: " + err.Error())
 	}

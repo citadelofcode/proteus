@@ -1,0 +1,11 @@
+{
+    "versions": [{
+        "versionNumber": "1.0",
+        "allowedMethods": ["GET", "HEAD", "POST"],
+        "highestSupported": true
+    }, {
+        "versionNumber": "1.1",
+        "allowedMethods": ["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"],
+        "highestSupported": false
+    }]
+}

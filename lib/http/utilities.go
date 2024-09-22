@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+	"regexp"
+	"encoding/json"
 )
 
 func NewRequest(Connection net.Conn) *HttpRequest {
@@ -38,7 +40,27 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 	}
 	
 	server.PortNumber = 0
+	server.AllowedContentTypes = make(map[string]string)
+	fileContents, err := readFileContents("./assets/contenttypes.json")
+	if err != nil {
+		return nil, err
+	}
 
+	err = json.Unmarshal(fileContents, &server.AllowedContentTypes)
+	if err != nil {
+		return nil, err
+	}
+
+	server.HttpCompatibility = Compatibility{}
+	fileContents, err = readFileContents("./assets/compatibility.json")
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(fileContents, &server.HttpCompatibility)
+	if err != nil {
+		return nil, err
+	}
 	return &server, nil
 }
 
@@ -51,18 +73,20 @@ func getW3CLogLine(req *HttpRequest, res *HttpResponse, ClientAddress string) st
 	return fmt.Sprintf("%s %s %s %d %s", ClientAddress, req.Method, req.ResourcePath, res.StatusCode, req.Version)
 }
 
-func getResponseVersion(requestVersion string) string {
-	isCompatible := false
-	for _, version := range COMPATIBLE_VERSIONS {
-		if strings.EqualFold(version, requestVersion) {
-			isCompatible = true
-			break
-		}
+func validateRoute(Route string) bool {
+	if strings.HasPrefix(Route, "//") || !strings.HasPrefix(Route, "/") {
+		return false
 	}
 
-	if isCompatible {
-		return requestVersion
-	} else {
-		return MAX_VERSION
+	RouteName := strings.TrimPrefix(Route, "/")
+	isRouteValid, err := regexp.MatchString(VALIDATE_ROUTE_PATTERN, RouteName)
+	if err != nil {
+		return false
 	}
+
+	if !isRouteValid {
+		return false
+	}
+	
+	return true
 }

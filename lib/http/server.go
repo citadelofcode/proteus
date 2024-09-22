@@ -4,8 +4,9 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
-	"github.com/maheshkumaarbalaji/proteus/lib/router"
+	"path/filepath"
+	"errors"
+	"strings"
 )
 
 type HttpServer struct {
@@ -13,12 +14,14 @@ type HttpServer struct {
 	PortNumber int
 	Socket net.Listener
 	SrvLogger *log.Logger
-	StaticRouter router.FileRoutes
+	StaticRouter FileRoutes
+	AllowedContentTypes map[string]string
+	HttpCompatibility Compatibility
 }
 
 func (srv *HttpServer) Static(Route string, TargetPath string) {
 	if srv.StaticRouter == nil {
-		srv.StaticRouter = make(router.FileRoutes)
+		srv.StaticRouter = make(FileRoutes)
 	}
 	err := srv.StaticRouter.Add(Route, TargetPath)
 	if err != nil {
@@ -66,7 +69,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		return
 	}
 
-	responseVersion := getResponseVersion(httpRequest.Version)
+	responseVersion := srv.getResponseVersion(httpRequest.Version)
 
 	switch httpRequest.Method {
 	case GET_METHOD:
@@ -77,7 +80,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
-		file, err := fs.GetFile(TargetFilePath)
+		file, err := srv.getFile(TargetFilePath)
 		if err != nil {
 			srv.logError(err.Error())
 			httpResponse.Set(StatusInternalServerError, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusInternalServerError.GetErrorContent())
@@ -99,7 +102,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
-		file, err := fs.GetFile(TargetFilePath)
+		file, err := srv.getFile(TargetFilePath)
 		if err != nil {
 			srv.logError(err.Error())
 			httpResponse.Set(StatusInternalServerError, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusInternalServerError.GetErrorContent())
@@ -127,4 +130,56 @@ func (srv *HttpServer) sendResponse(httpRequest *HttpRequest, httpResponse *Http
 
 func (srv *HttpServer) logError(errorString string) {
 	srv.SrvLogger.Print(errorString)
+}
+
+func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
+	pathType, err := GetPathType(CompleteFilePath)
+	if err != nil {
+		return "", err
+	}
+	if pathType != FILE_TYPE_PATH {
+		return "", errors.New("path provided does not point to a file")
+	}
+	fileExtension := filepath.Ext(CompleteFilePath)
+	if fileExtension == "" {
+		return "", errors.New("file path provided does not contain a file extension")
+	}
+	fileExtension = strings.ToLower(fileExtension)
+	fileMediaType, exists := srv.AllowedContentTypes[fileExtension]
+	if !exists {
+		fileMediaType = "application/octet-stream"
+	}
+	
+	return fileMediaType, nil
+}
+
+func (srv *HttpServer) getFile(CompleteFilePath string) (*File, error) {
+	var file File
+	contentType, err := srv.getContentType(CompleteFilePath)
+	if err != nil {
+		return nil, err
+	}
+	fileContents, err := readFileContents(CompleteFilePath)
+	if err != nil {
+		return nil, err
+	}
+	file.Contents = fileContents
+	file.ContentType = contentType
+	return &file, nil
+}
+
+func (srv *HttpServer) getResponseVersion(requestVersion string) string {
+	isCompatible := false
+	for _, version := range srv.HttpCompatibility.getAllVersions() {
+		if strings.EqualFold(version, requestVersion) {
+			isCompatible = true
+			break
+		}
+	}
+
+	if isCompatible {
+		return requestVersion
+	} else {
+		return srv.HttpCompatibility.getHighestVersion()
+	}
 }
