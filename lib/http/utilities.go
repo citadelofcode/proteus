@@ -11,6 +11,8 @@ import (
 	"time"
 	"regexp"
 	"encoding/json"
+	"runtime"
+	"path/filepath"
 )
 
 func NewRequest(Connection net.Conn) *HttpRequest {
@@ -40,8 +42,18 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 	}
 	
 	server.PortNumber = 0
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return nil, errors.New("unable to access call stack to fetch current file being executed")
+	}
+	currentFilePath, err := filepath.Abs(file)
+	if err != nil {
+		return nil, err
+	}
+	currentDirectory := filepath.Dir(currentFilePath)
+	contentTypesJson := filepath.Join(currentDirectory, "assets", "contenttypes.json")
 	server.AllowedContentTypes = make(map[string]string)
-	fileContents, err := readFileContents("./assets/contenttypes.json")
+	fileContents, err := readFileContents(contentTypesJson)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +63,9 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 		return nil, err
 	}
 
+	compatibilityJson := filepath.Join(currentDirectory, "assets", "compatibility.json")
 	server.HttpCompatibility = Compatibility{}
-	fileContents, err = readFileContents("./assets/compatibility.json")
+	fileContents, err = readFileContents(compatibilityJson)
 	if err != nil {
 		return nil, err
 	}
