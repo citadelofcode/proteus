@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"strings"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
 type FileRoutes map[string]string
@@ -23,11 +24,11 @@ func (sr FileRoutes) Add(RoutePath string, TargetPath string) error {
 	if !isAbsolutePath {
 		return errors.New("parameter 'TargetPath' must be an absolute path")
 	}
-	PathType, err := GetPathType(TargetPath)
+	PathType, err := fs.GetPathType(TargetPath)
 	if err != nil {
 		return errors.New("error occurred while determining target path type: " + err.Error())
 	}
-	if PathType == FILE_TYPE_PATH {
+	if PathType == fs.FILE_TYPE_PATH {
 		return errors.New("target path should be a directory")
 	}
 	sr[RoutePath] = TargetPath

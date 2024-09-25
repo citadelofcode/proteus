@@ -1,4 +1,4 @@
-package http
+package fs
 
 import (
 	"time"
@@ -6,6 +6,12 @@ import (
 	"errors"
 	"io"
 	"bufio"
+)
+
+const (
+	CHUNK_SIZE = 1024
+	FOLDER_TYPE_PATH = "Folder"
+	FILE_TYPE_PATH = "File"
 )
 
 type File struct {
@@ -29,7 +35,7 @@ func GetPathType(TargetPath string) (string, error) {
 	}
 }
 
-func readFileContents(CompleteFilePath string) ([]byte, error) {
+func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
 	if err != nil {
