@@ -10,9 +10,7 @@ import (
 	"strings"
 	"time"
 	"regexp"
-	"encoding/json"
-	"runtime"
-	"path/filepath"
+	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
 func NewRequest(Connection net.Conn) *HttpRequest {
@@ -42,38 +40,12 @@ func NewServer(ServerHost string) (*HttpServer, error) {
 	}
 	
 	server.PortNumber = 0
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		return nil, errors.New("unable to access call stack to fetch current file being executed")
-	}
-	currentFilePath, err := filepath.Abs(file)
-	if err != nil {
-		return nil, err
-	}
-	currentDirectory := filepath.Dir(currentFilePath)
-	contentTypesJson := filepath.Join(currentDirectory, "assets", "contenttypes.json")
-	server.AllowedContentTypes = make(map[string]string)
-	fileContents, err := readFileContents(contentTypesJson)
+	configObj, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(fileContents, &server.AllowedContentTypes)
-	if err != nil {
-		return nil, err
-	}
-
-	compatibilityJson := filepath.Join(currentDirectory, "assets", "compatibility.json")
-	server.HttpCompatibility = Compatibility{}
-	fileContents, err = readFileContents(compatibilityJson)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(fileContents, &server.HttpCompatibility)
-	if err != nil {
-		return nil, err
-	}
+	server.Config = configObj
 	return &server, nil
 }
 

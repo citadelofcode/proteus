@@ -1,4 +1,4 @@
-package http
+package config
 
 import (
 	"strings"
@@ -10,11 +10,12 @@ type HttpVersion struct {
 	HighestSupported bool `json:"highestSupported"`
 }
 
-type Compatibility struct {
+type Configuration struct {
+	AllowedContentTypes map[string]string `json:"content_types"`
 	Versions []HttpVersion `json:"versions"`
 }
 
-func (cy *Compatibility) getAllVersions() []string {
+func (cy *Configuration) GetAllVersions() []string {
 	versions := make([]string, 0)
 	for _, ver := range cy.Versions {
 		tempVer := strings.TrimSpace(ver.VersionNumber)
@@ -24,7 +25,7 @@ func (cy *Compatibility) getAllVersions() []string {
 	return versions
 }
 
-func (cy *Compatibility) getHighestVersion() string {
+func (cy *Configuration) GetHighestVersion() string {
 	for _, ver := range cy.Versions {
 		if ver.HighestSupported {
 			return strings.TrimSpace(ver.VersionNumber)
@@ -34,7 +35,7 @@ func (cy *Compatibility) getHighestVersion() string {
 	return "";
 }
 
-func (cy *Compatibility) getAllowedMethods(version string) string {
+func (cy *Configuration) GetAllowedMethods(version string) string {
 	for _, ver := range cy.Versions {
 		if strings.EqualFold(ver.VersionNumber, version) {
 			return strings.Join(ver.AllowedMethods, ", ")
@@ -44,7 +45,7 @@ func (cy *Compatibility) getAllowedMethods(version string) string {
 	return ""
 }
 
-func (cy *Compatibility) isMethodAllowed(version string, reqMethod string) bool {
+func (cy *Configuration) IsMethodAllowed(version string, reqMethod string) bool {
 	for _, ver := range cy.Versions {
 		if strings.EqualFold(ver.VersionNumber, version) {
 			for _, method := range ver.AllowedMethods {

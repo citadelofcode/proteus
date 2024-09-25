@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"errors"
 	"strings"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
 type HttpServer struct {
@@ -15,8 +17,7 @@ type HttpServer struct {
 	Socket net.Listener
 	SrvLogger *log.Logger
 	StaticRouter FileRoutes
-	AllowedContentTypes map[string]string
-	HttpCompatibility Compatibility
+	Config *config.Configuration
 }
 
 func (srv *HttpServer) Static(Route string, TargetPath string) {
@@ -73,7 +74,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 
 	switch httpRequest.Method {
 	case "GET":
-		if !srv.HttpCompatibility.isMethodAllowed(responseVersion, "GET") {
+		if !srv.Config.IsMethodAllowed(responseVersion, "GET") {
 			srv.logError("'GET' method is not allowed in HTTP version " + responseVersion)
 			httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
@@ -101,7 +102,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 		}
 	case "HEAD":
-		if !srv.HttpCompatibility.isMethodAllowed(responseVersion, "HEAD") {
+		if !srv.Config.IsMethodAllowed(responseVersion, "HEAD") {
 			srv.logError("'HEAD' method is not allowed in HTTP version " + responseVersion)
 			httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
@@ -124,9 +125,9 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpResponse.Set(StatusOK, responseVersion, file.ContentType, make([]byte, 0))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	default:
-		srv.logError("The HTTP method is not allowed by the server. Allowed Methods are - " + srv.HttpCompatibility.getAllowedMethods(responseVersion))
+		srv.logError("The HTTP method is not allowed by the server. Allowed Methods are - " + srv.Config.GetAllowedMethods(responseVersion))
 		httpResponse.Set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
-		httpResponse.Headers.Add("Allow", srv.HttpCompatibility.getAllowedMethods(responseVersion))
+		httpResponse.Headers.Add("Allow", srv.Config.GetAllowedMethods(responseVersion))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	}
 }
@@ -145,11 +146,11 @@ func (srv *HttpServer) logError(errorString string) {
 }
 
 func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
-	pathType, err := GetPathType(CompleteFilePath)
+	pathType, err := fs.GetPathType(CompleteFilePath)
 	if err != nil {
 		return "", err
 	}
-	if pathType != FILE_TYPE_PATH {
+	if pathType != fs.FILE_TYPE_PATH {
 		return "", errors.New("path provided does not point to a file")
 	}
 	fileExtension := filepath.Ext(CompleteFilePath)
@@ -157,7 +158,7 @@ func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
 		return "", errors.New("file path provided does not contain a file extension")
 	}
 	fileExtension = strings.ToLower(fileExtension)
-	fileMediaType, exists := srv.AllowedContentTypes[fileExtension]
+	fileMediaType, exists := srv.Config.AllowedContentTypes[fileExtension]
 	if !exists {
 		fileMediaType = "application/octet-stream"
 	}
@@ -165,13 +166,13 @@ func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
 	return fileMediaType, nil
 }
 
-func (srv *HttpServer) getFile(CompleteFilePath string) (*File, error) {
-	var file File
+func (srv *HttpServer) getFile(CompleteFilePath string) (*fs.File, error) {
+	var file fs.File
 	contentType, err := srv.getContentType(CompleteFilePath)
 	if err != nil {
 		return nil, err
 	}
-	fileContents, err := readFileContents(CompleteFilePath)
+	fileContents, err := fs.ReadFileContents(CompleteFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +183,7 @@ func (srv *HttpServer) getFile(CompleteFilePath string) (*File, error) {
 
 func (srv *HttpServer) getResponseVersion(requestVersion string) string {
 	isCompatible := false
-	for _, version := range srv.HttpCompatibility.getAllVersions() {
+	for _, version := range srv.Config.GetAllVersions() {
 		if strings.EqualFold(version, requestVersion) {
 			isCompatible = true
 			break
@@ -192,6 +193,6 @@ func (srv *HttpServer) getResponseVersion(requestVersion string) string {
 	if isCompatible {
 		return requestVersion
 	} else {
-		return srv.HttpCompatibility.getHighestVersion()
+		return srv.Config.GetHighestVersion()
 	}
 }
