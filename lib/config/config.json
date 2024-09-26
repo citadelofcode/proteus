@@ -1,13 +1,10 @@
 {
-    "versions": [{
-        "versionNumber": "1.0",
-        "allowedMethods": ["GET", "HEAD", "POST"],
-        "highestSupported": true
-    }, {
-        "versionNumber": "1.1",
-        "allowedMethods": ["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH"],
-        "highestSupported": false
-    }],
+    "versions": [
+        {
+            "versionNumber": "1.0",
+            "allowed_methods": ["GET", "HEAD", "POST"]
+        }
+    ],
     "content_types": {
         "pdf": "application/pdf",
         "htm": "text/html",
@@ -60,5 +57,91 @@
         "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "xml": "application/xml",
         "zip": "application/zip"
+    },
+    "server_defaults": {
+        "hostname": "localhost",
+        "port": "8080"
+    },
+    "allowed_headers": {
+        "Authorization": {
+            "type": "string",
+            "category": "request",
+            "compatibility": ["1.0"]
+        },
+        "Allow": {
+            "type": "string",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "Content-Encoding": {
+            "type": "string",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "Content-Length": {
+            "type": "string",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "Content-Type": {
+            "type": "string",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "Date": {
+            "type": "date",
+            "category": "general",
+            "compatibility": ["1.0"]
+        },
+        "Expires": {
+            "type": "date",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "From": {
+            "type": "date",
+            "category": "request",
+            "compatibility": ["1.0"]
+        },
+        "If-Modified-Since": {
+            "type": "date",
+            "category": "request",
+            "compatibility": ["1.0"]
+        },
+        "Last-Modified": {
+            "type": "date",
+            "category": "entity",
+            "compatibility": ["1.0"]
+        },
+        "Location": {
+            "type": "string",
+            "category": "response",
+            "compatibility": ["1.0"]
+        },
+        "Pragma": {
+            "type": "string",
+            "category": "general",
+            "compatibility": ["1.0"]
+        },
+        "Referrer": {
+            "type": "string",
+            "category": "request",
+            "compatibility": ["1.0"]
+        },
+        "Server": {
+            "type": "string",
+            "category": "response",
+            "compatibility": ["1.0"]
+        },
+        "User-Agent": {
+            "type": "string",
+            "category": "request",
+            "compatibility": ["1.0"]
+        },
+        "WWW-Authenticate": {
+            "type": "string",
+            "category": "response",
+            "compatibility": ["1.0"]
+        }
     }
 }

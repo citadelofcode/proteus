@@ -31,12 +31,19 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 	}
 }
 
-func (srv * HttpServer) Listen(PortNumber int) {
+func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	if PortNumber == 0 {
-		srv.PortNumber = DEFAULT_PORT;
+		srv.PortNumber = srv.Config.GetDefaultPort();
 	} else {
 		srv.PortNumber = PortNumber
 	}
+
+	if HostAddress == "" {
+		srv.HostAddress = srv.Config.GetDefaultHostname()
+	} else {
+		srv.HostAddress = strings.TrimSpace(HostAddress)
+	}
+
 	serverAddress := srv.HostAddress + ":" + strconv.Itoa(srv.PortNumber)
 	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
@@ -62,7 +69,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer ClientConnection.Close()
 	httpRequest := NewRequest(ClientConnection)
 	httpResponse := NewResponse(ClientConnection)
-	err := httpRequest.Read()
+	err := httpRequest.Read(srv.Config.GetAllowedHeaders())
 	if err != nil {
 		srv.logError(err.Error())
 		httpResponse.Set(StatusInternalServerError, "", "", StatusInternalServerError.GetErrorContent())
@@ -158,7 +165,7 @@ func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
 		return "", errors.New("file path provided does not contain a file extension")
 	}
 	fileExtension = strings.ToLower(fileExtension)
-	fileMediaType, exists := srv.Config.AllowedContentTypes[fileExtension]
+	fileMediaType, exists := srv.Config.GetContentType(fileExtension)
 	if !exists {
 		fileMediaType = "application/octet-stream"
 	}

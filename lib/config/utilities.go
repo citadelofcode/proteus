@@ -9,7 +9,7 @@ import (
 )
 
 func GetConfig() (*Configuration, error) {
-	config := Configuration{}
+	var config Configuration
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to access call stack to fetch current file being executed")

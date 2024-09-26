@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -29,16 +28,11 @@ func NewResponse(Connection net.Conn) *HttpResponse {
 	return &httpResponse
 }
 
-func NewServer(ServerHost string) (*HttpServer, error) {
+func NewServer() (*HttpServer, error) {
 	var server HttpServer
 	logger := log.New(os.Stdout, "", log.Ldate | log.Ltime)
 	server.SrvLogger = logger
-	if ServerHost == "" {
-		return nil, errors.New("server host address cannot be empty")
-	} else {
-		server.HostAddress = ServerHost
-	}
-	
+	server.HostAddress = "";
 	server.PortNumber = 0
 	configObj, err := config.GetConfig()
 	if err != nil {
