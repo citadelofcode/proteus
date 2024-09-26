@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	server, err := http.NewServer("localhost")
+	server, err := http.NewServer()
 	if err != nil {
 		fmt.Printf("Error occurred while creating web server: %s", err.Error())
 		os.Exit(1)
@@ -22,5 +22,5 @@ func main() {
 	
 	TargetDirectory := filepath.Join(CurrentDirectory, "Files")
 	server.Static("/files", TargetDirectory)
-	server.Listen(8080)
+	server.Listen(8080, "localhost")
 }

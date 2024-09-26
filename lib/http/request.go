@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/textproto"
+	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
 type HttpRequest struct {
@@ -29,8 +31,8 @@ func (req *HttpRequest) setReader(reader *bufio.Reader) {
 	req.reader = reader
 }
 
-func (req *HttpRequest) Read() error {
-	err := req.readHeader()
+func (req *HttpRequest) Read(AllowedHeaders map[string]config.HttpHeader) error {
+	err := req.readHeader(AllowedHeaders)
 	if err != nil {
 		return err
 	}
@@ -51,7 +53,7 @@ func (req *HttpRequest) Read() error {
 	return nil
 }
 
-func (req *HttpRequest) readHeader() error {
+func (req *HttpRequest) readHeader(AllowedHeaders map[string]config.HttpHeader) error {
 	RequestLineProcessed := false
 	HeaderProcessingCompleted := false
 
@@ -63,6 +65,7 @@ func (req *HttpRequest) readHeader() error {
 			}
 			return err
 		}
+
 		message = strings.TrimSuffix(message, HEADER_LINE_SEPERATOR)
 		if len(message) == 0 && !HeaderProcessingCompleted {
 			HeaderProcessingCompleted = true
@@ -87,7 +90,20 @@ func (req *HttpRequest) readHeader() error {
 				errorString := fmt.Sprintf("error while processing header: %s :: Semicolon is missing", message)
 				return errors.New(errorString)
 			}
-			req.Headers.Add(HeaderKey, HeaderValue)
+
+			HeaderKey = strings.TrimSpace(HeaderKey)
+			HeaderValue = strings.TrimSpace(HeaderValue)
+
+			for configHdr, HdrObj := range AllowedHeaders {
+				if strings.EqualFold(configHdr, textproto.CanonicalMIMEHeaderKey(HeaderKey)) && strings.EqualFold(HdrObj.Category, "date") {
+					_, err := time.Parse(time.RFC1123, HeaderValue)
+					_, errOne := time.Parse(time.ANSIC, HeaderValue)
+
+					if err == nil || errOne == nil {
+						req.Headers.Add(HeaderKey, HeaderValue)
+					}
+				}
+			}
 		}
 	}
 
@@ -121,7 +137,10 @@ func (req *HttpRequest) isConditionalGet(FileModifiedTime time.Time) bool {
 	LastModifiedString = strings.TrimSpace(LastModifiedString)
 	LastModifiedSince, err := time.Parse(time.RFC1123, LastModifiedString)
 	if err != nil {
-		return false
+		LastModifiedSince, err = time.Parse(time.ANSIC, LastModifiedString)
+		if err != nil {
+			return false
+		}
 	}
 	if FileModifiedTime.After(LastModifiedSince) {
 		return false
