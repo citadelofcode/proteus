@@ -10,19 +10,29 @@ import (
 )
 
 const (
+	// Size in bytes for each chunk of data being read from a file.
 	CHUNK_SIZE = 1024
+	// Type value for paths pointing to a folder in the file system.
 	FOLDER_TYPE_PATH = "Folder"
+	// Type value for paths pointing to a file in the file system.
 	FILE_TYPE_PATH = "File"
 )
 
+// Structure to represent a file in the local file system.
 type File struct {
+	// Contents of the file as a stream of bytes.
 	Contents []byte
+	// Media type of the file.
 	ContentType string
+	// Time at which the file was last modified.
 	LastModifiedAt time.Time
+	// Base name of the file.
 	Name string
+	// Size of the file in bytes.
 	Size int64
 }
 
+// Returns the type of the given path i.e., file or folder. An error is returned if the given path is neither a file nor a folder.
 func GetPathType(TargetPath string) (string, error) {
 	fileStat, err := os.Stat(TargetPath)
 	if err != nil {
@@ -38,6 +48,7 @@ func GetPathType(TargetPath string) (string, error) {
 	}
 }
 
+// Reads the contents of the file available at the given path and returns it as a byte slice.
 func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
@@ -66,6 +77,7 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	return fileContents, nil
 }
 
+// Returns pointer to a FILE object that contains metadata for file available at the given path. The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
 func GetFile(CompleteFilePath string, ContentType string) (*File, error) {
 	var file File
 	fileStat, err := os.Stat(CompleteFilePath)
