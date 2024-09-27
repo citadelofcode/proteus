@@ -14,7 +14,7 @@ import (
 
 func NewRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
-	httpRequest.Initialize()
+	httpRequest.initialize()
 	reader := bufio.NewReader(Connection)
 	httpRequest.setReader(reader)
 	return &httpRequest
@@ -22,7 +22,7 @@ func NewRequest(Connection net.Conn) *HttpRequest {
 
 func NewResponse(Connection net.Conn) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.Initialize()
+	httpResponse.initialize()
 	writer := bufio.NewWriter(Connection)
 	httpResponse.setWriter(writer)
 	return &httpResponse
@@ -40,6 +40,10 @@ func NewServer() (*HttpServer, error) {
 	}
 
 	server.Config = configObj
+	ServerName = strings.TrimSpace(configObj.ServerDefaults["servername"])
+	DateHeaders = configObj.GetDateHeaders()
+	DefaultHostname = configObj.GetDefaultHostname()
+	DefaultPortNumber = configObj.GetDefaultPort()
 	return &server, nil
 }
 

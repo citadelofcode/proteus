@@ -6,22 +6,18 @@ import (
 	"strings"
 )
 
-type HttpHeader struct {
-	Type string `json:"type"`
-	Category string `json:"category"`
-	Compatibility []string `json:"compatibility"`
-}
-
+// Structure to contain the compatibility information for the web server instance. This includes the different versions of HTTP and the corresponding methods supported.
 type HttpVersion struct {
 	VersionNumber string `json:"versionNumber"`
 	AllowedMethods []string `json:"allowed_methods"`
 }
 
+// Structure to hold the configuration information exported from "config.json" file.
 type Configuration struct {
 	AllowedContentTypes map[string]string `json:"content_types"`
 	Versions []HttpVersion `json:"versions"`
 	ServerDefaults map[string]string `json:"server_defaults"`
-	AllowedHeaders map[string]HttpHeader `json:"allowed_headers"`
+	DateHeaders []string `json:"date_headers"`
 }
 
 func (cy *Configuration) GetAllVersions() []string {
@@ -88,6 +84,6 @@ func (cy *Configuration) GetDefaultPort() int {
 	return portNumber
 }
 
-func (cy *Configuration) GetAllowedHeaders() map[string]HttpHeader {
-	return cy.AllowedHeaders
+func (cy *Configuration) GetDateHeaders() []string {
+	return cy.DateHeaders
 }

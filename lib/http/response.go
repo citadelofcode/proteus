@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Structure to represent a HTTP response sent back by the server to the client.
 type HttpResponse struct {
 	StatusCode int
 	StatusMessage string
@@ -18,58 +19,58 @@ type HttpResponse struct {
 	ContentType string
 }
 
-func (res *HttpResponse) Initialize() {
+func (res *HttpResponse) initialize() {
 	res.Headers = make(Headers)
-	res.AddGeneralHeaders()
-	res.AddResponseHeaders()
+	res.addGeneralHeaders()
+	res.addResponseHeaders()
 }
 
 func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 	res.writer = writer
 }
 
-func (res *HttpResponse) SetVersion(version string) {
+func (res *HttpResponse) setVersion(version string) {
 	res.Version = strings.TrimSpace(version)
 }
 
-func (res *HttpResponse) Set(status StatusCode, version string, contentType string, contents []byte) {
-	res.SetStatus(status)
+func (res *HttpResponse) set(status StatusCode, version string, contentType string, contents []byte) {
+	res.Status(status)
 	if version != "" {
-		res.SetVersion(version)
+		res.setVersion(version)
 	}
 	if contentType != "" {
-		res.SetContentType(contentType)
+		res.setContentType(contentType)
 	}
 	if len(contents) > 0 {
-		res.SetContents(contents)
+		res.setContents(contents)
 	}
 }
 
-func (res *HttpResponse) SetStatus(status StatusCode) {
+func (res *HttpResponse) Status(status StatusCode) {
 	res.StatusCode = int(status)
 	res.StatusMessage = status.GetStatusMessage()
 }
 
-func (res *HttpResponse) SetContents(contents []byte) {
+func (res *HttpResponse) setContents(contents []byte) {
 	res.Body = contents
 	contentLength := strconv.Itoa(len(contents))
 	res.Headers.Add("Content-Length", contentLength)
 }
 
-func (res *HttpResponse) SetContentType(ContentType string) {
+func (res *HttpResponse) setContentType(ContentType string) {
 	res.ContentType = ContentType
 	res.Headers.Add("Content-Type", ContentType)
 }
 
-func (res *HttpResponse) AddGeneralHeaders() {
+func (res *HttpResponse) addGeneralHeaders() {
 	res.Headers.Add("Date", getRfc1123Time())
 }
 
-func (res *HttpResponse) AddResponseHeaders() {
-	res.Headers.Add("Server", SERVER_NAME)
+func (res *HttpResponse) addResponseHeaders() {
+	res.Headers.Add("Server", ServerName)
 }
 
-func (res *HttpResponse) Write() error {
+func (res *HttpResponse) write() error {
 	err := res.writeStatusLine()
 	if err != nil {
 		return err

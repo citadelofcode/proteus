@@ -1,11 +1,12 @@
 package fs
 
 import (
-	"time"
-	"os"
+	"bufio"
 	"errors"
 	"io"
-	"bufio"
+	"os"
+	"strings"
+	"time"
 )
 
 const (
@@ -18,6 +19,8 @@ type File struct {
 	Contents []byte
 	ContentType string
 	LastModifiedAt time.Time
+	Name string
+	Size int64
 }
 
 func GetPathType(TargetPath string) (string, error) {
@@ -61,4 +64,28 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	}
 
 	return fileContents, nil
+}
+
+func GetFile(CompleteFilePath string, ContentType string) (*File, error) {
+	var file File
+	fileStat, err := os.Stat(CompleteFilePath)
+	if err != nil {
+		return nil, err
+	}
+	Mode := fileStat.Mode()
+	if Mode.IsRegular() {
+		file.ContentType = strings.TrimSpace(ContentType)
+		fileContents, err := ReadFileContents(CompleteFilePath)
+		if err != nil {
+			return nil, err
+		}
+
+		file.Contents = fileContents
+		file.LastModifiedAt = fileStat.ModTime()
+		file.Name = fileStat.Name()
+		file.Size = fileStat.Size()
+		return &file, nil
+	} else {
+		return nil, errors.New("given path is not a file")
+	}
 }

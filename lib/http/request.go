@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 	"net/textproto"
-	"github.com/maheshkumaarbalaji/proteus/lib/config"
+	"slices"
 )
 
+// Structure to represent a HTTP request received by the web server.
 type HttpRequest struct {
 	Method string
 	ResourcePath string
@@ -22,7 +23,7 @@ type HttpRequest struct {
 	reader *bufio.Reader
 }
 
-func (req *HttpRequest) Initialize() {
+func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
 }
@@ -31,8 +32,8 @@ func (req *HttpRequest) setReader(reader *bufio.Reader) {
 	req.reader = reader
 }
 
-func (req *HttpRequest) Read(AllowedHeaders map[string]config.HttpHeader) error {
-	err := req.readHeader(AllowedHeaders)
+func (req *HttpRequest) read() error {
+	err := req.readHeader()
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func (req *HttpRequest) Read(AllowedHeaders map[string]config.HttpHeader) error 
 	return nil
 }
 
-func (req *HttpRequest) readHeader(AllowedHeaders map[string]config.HttpHeader) error {
+func (req *HttpRequest) readHeader() error {
 	RequestLineProcessed := false
 	HeaderProcessingCompleted := false
 
@@ -94,15 +95,15 @@ func (req *HttpRequest) readHeader(AllowedHeaders map[string]config.HttpHeader) 
 			HeaderKey = strings.TrimSpace(HeaderKey)
 			HeaderValue = strings.TrimSpace(HeaderValue)
 
-			for configHdr, HdrObj := range AllowedHeaders {
-				if strings.EqualFold(configHdr, textproto.CanonicalMIMEHeaderKey(HeaderKey)) && strings.EqualFold(HdrObj.Category, "date") {
-					_, err := time.Parse(time.RFC1123, HeaderValue)
-					_, errOne := time.Parse(time.ANSIC, HeaderValue)
+			if slices.Contains(DateHeaders ,textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
+				_, err := time.Parse(time.RFC1123, HeaderValue)
+				_, errOne := time.Parse(time.ANSIC, HeaderValue)
 
-					if err == nil || errOne == nil {
-						req.Headers.Add(HeaderKey, HeaderValue)
-					}
+				if err == nil || errOne == nil {
+					req.Headers.Add(HeaderKey, HeaderValue)
 				}
+			} else {
+				req.Headers.Add(HeaderKey, HeaderValue)
 			}
 		}
 	}
