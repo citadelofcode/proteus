@@ -34,16 +34,16 @@ func NewServer() (*HttpServer, error) {
 	server.SrvLogger = logger
 	server.HostAddress = "";
 	server.PortNumber = 0
-	configObj, err := config.GetConfig()
+	ServerConfig, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	server.Config = configObj
-	ServerName = strings.TrimSpace(configObj.ServerDefaults["servername"])
-	DateHeaders = configObj.GetDateHeaders()
-	DefaultHostname = configObj.GetDefaultHostname()
-	DefaultPortNumber = configObj.GetDefaultPort()
+	DateHeaders = make([]string, 0)
+	DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
+	AllowedContentTypes = ServerConfig.AllowedContentTypes
+	ServerDefaults = ServerConfig.ServerDefaults
+	Versions = ServerConfig.GetVersionMap()
 	return &server, nil
 }
 

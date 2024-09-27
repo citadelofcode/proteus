@@ -8,8 +8,9 @@ import (
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
-func GetConfig() (*Configuration, error) {
-	var config Configuration
+// Returns the configuration information imported from "config.json".
+func GetConfig() (*Configuration ,error) {
+	var ServerConfig Configuration
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to access call stack to fetch current file being executed")
@@ -25,10 +26,10 @@ func GetConfig() (*Configuration, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(fileContents, &config)
+	err = json.Unmarshal(fileContents, &ServerConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	return &ServerConfig, nil
 }

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"strings"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
-	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
 type HttpServer struct {
@@ -17,7 +16,6 @@ type HttpServer struct {
 	Socket net.Listener
 	SrvLogger *log.Logger
 	StaticRouter FileRoutes
-	Config *config.Configuration
 }
 
 func (srv *HttpServer) Static(Route string, TargetPath string) {
@@ -33,13 +31,13 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 
 func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	if PortNumber == 0 {
-		srv.PortNumber = DefaultPortNumber
+		srv.PortNumber = GetDefaultPort()
 	} else {
 		srv.PortNumber = PortNumber
 	}
 
 	if HostAddress == "" {
-		srv.HostAddress = DefaultHostname
+		srv.HostAddress = GetDefaultHostname()
 	} else {
 		srv.HostAddress = strings.TrimSpace(HostAddress)
 	}
@@ -81,9 +79,10 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	
 	switch httpRequest.Method {
 	case "GET":
-		if !srv.Config.IsMethodAllowed(responseVersion, "GET") {
+		if !IsMethodAllowed(responseVersion, "GET") {
 			srv.logError("'GET' method is not allowed in HTTP version " + responseVersion)
 			httpResponse.set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
+			httpResponse.Headers.Add("Allow", GetAllowedMethods(responseVersion))
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
@@ -109,9 +108,10 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 		}
 	case "HEAD":
-		if !srv.Config.IsMethodAllowed(responseVersion, "HEAD") {
+		if !IsMethodAllowed(responseVersion, "HEAD") {
 			srv.logError("'HEAD' method is not allowed in HTTP version " + responseVersion)
 			httpResponse.set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
+			httpResponse.Headers.Add("Allow", GetAllowedMethods(responseVersion))
 			srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 			return
 		}
@@ -132,9 +132,9 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpResponse.set(StatusOK, responseVersion, file.ContentType, make([]byte, 0))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	default:
-		srv.logError("The HTTP method is not allowed by the server. Allowed Methods are - " + srv.Config.GetAllowedMethods(responseVersion))
+		srv.logError("The HTTP method is not supported by the server. Allowed Methods are - " + GetAllowedMethods(responseVersion))
 		httpResponse.set(StatusMethodNotAllowed, responseVersion, ERROR_MSG_CONTENT_TYPE, StatusMethodNotAllowed.GetErrorContent())
-		httpResponse.Headers.Add("Allow", srv.Config.GetAllowedMethods(responseVersion))
+		httpResponse.Headers.Add("Allow", GetAllowedMethods(responseVersion))
 		srv.sendResponse(httpRequest, httpResponse, ClientConnection.RemoteAddr().String())
 	}
 }
@@ -165,7 +165,7 @@ func (srv *HttpServer) getContentType(CompleteFilePath string) (string, error) {
 		return "", errors.New("file path provided does not contain a file extension")
 	}
 	fileExtension = strings.ToLower(fileExtension)
-	fileMediaType, exists := srv.Config.GetContentType(fileExtension)
+	fileMediaType, exists := GetContentType(fileExtension)
 	if !exists {
 		fileMediaType = "application/octet-stream"
 	}
@@ -188,7 +188,7 @@ func (srv *HttpServer) getFile(CompleteFilePath string) (*fs.File, error) {
 
 func (srv *HttpServer) getResponseVersion(requestVersion string) string {
 	isCompatible := false
-	for _, version := range srv.Config.GetAllVersions() {
+	for _, version := range GetAllVersions() {
 		if strings.EqualFold(version, requestVersion) {
 			isCompatible = true
 			break
@@ -198,6 +198,6 @@ func (srv *HttpServer) getResponseVersion(requestVersion string) string {
 	if isCompatible {
 		return requestVersion
 	} else {
-		return srv.Config.GetHighestVersion()
+		return GetHighestVersion()
 	}
 }
