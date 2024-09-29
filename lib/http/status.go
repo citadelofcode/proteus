@@ -93,7 +93,7 @@ func (code StatusCode) GetStatusMessage() string {
 	}
 }
 
-func (code StatusCode) GetErrorContent() []byte {
+func (code StatusCode) GetErrorContent() string {
 	responseString := ""
 	switch code {
 	case StatusBadRequest:
@@ -230,5 +230,5 @@ func (code StatusCode) GetErrorContent() []byte {
 		responseString = ""
 	}
 
-	return []byte(responseString)
+	return responseString
 }

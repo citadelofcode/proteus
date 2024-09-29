@@ -4,8 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"net/textproto"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
 // Structure to represent a HTTP response sent back by the server to the client.
@@ -16,50 +20,18 @@ type HttpResponse struct {
 	Headers Headers
 	Body []byte
 	writer *bufio.Writer
-	ContentType string
 }
 
-func (res *HttpResponse) initialize() {
+func (res *HttpResponse) initialize(version string) {
+	res.Version = strings.TrimSpace(version)
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
+	res.Version = GetHighestVersion()
 }
 
 func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 	res.writer = writer
-}
-
-func (res *HttpResponse) setVersion(version string) {
-	res.Version = strings.TrimSpace(version)
-}
-
-func (res *HttpResponse) set(status StatusCode, version string, contentType string, contents []byte) {
-	res.Status(status)
-	if version != "" {
-		res.setVersion(version)
-	}
-	if contentType != "" {
-		res.setContentType(contentType)
-	}
-	if len(contents) > 0 {
-		res.setContents(contents)
-	}
-}
-
-func (res *HttpResponse) Status(status StatusCode) {
-	res.StatusCode = int(status)
-	res.StatusMessage = status.GetStatusMessage()
-}
-
-func (res *HttpResponse) setContents(contents []byte) {
-	res.Body = contents
-	contentLength := strconv.Itoa(len(contents))
-	res.Headers.Add("Content-Length", contentLength)
-}
-
-func (res *HttpResponse) setContentType(ContentType string) {
-	res.ContentType = ContentType
-	res.Headers.Add("Content-Type", ContentType)
 }
 
 func (res *HttpResponse) addGeneralHeaders() {
@@ -138,18 +110,69 @@ func (res *HttpResponse) writeBody() error {
 	}
 
 	if len(res.Body) > 0 {
-		if strings.HasPrefix(res.ContentType, "text") {
-			_, err := res.writer.WriteString(string(res.Body))
-			if err != nil {
-				return errors.New("error occurred while writing response body: " + err.Error())
-			}
-		} else {
-			_, err := res.writer.Write(res.Body)
-			if err != nil {
-				return errors.New("error occurred while writing response body: " + err.Error())
+		ContentType, exists := res.Headers.Get("Content-Type")
+		if exists {
+			ContentType = strings.TrimSpace(ContentType)
+			ContentType = strings.ToLower(ContentType)
+			if strings.HasPrefix(ContentType, "text") {
+				_, err := res.writer.WriteString(string(res.Body))
+				if err != nil {
+					return errors.New("error occurred while writing response body: " + err.Error())
+				}
+			} else {
+				_, err := res.writer.Write(res.Body)
+				if err != nil {
+					return errors.New("error occurred while writing response body: " + err.Error())
+				}
 			}
 		}
 	}
 
 	return nil
+}
+
+// Adds a new key-value pair to the request headers collection.
+func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) {
+	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
+		_, err := time.Parse(time.RFC1123, HeaderValue)
+		_, errOne := time.Parse(time.ANSIC, HeaderValue)
+
+		if err == nil || errOne == nil {
+			res.Headers.Add(HeaderKey, HeaderValue)
+		}
+	} else {
+		res.Headers.Add(HeaderKey, HeaderValue)
+	}
+}
+
+// Sets the status of the HTTP response instance.
+func (res *HttpResponse) Status(status StatusCode) {
+	res.StatusCode = int(status)
+	res.StatusMessage = status.GetStatusMessage()
+}
+
+// Send the given file from the local file system as the HTTP response.
+func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) {
+	fileMediaType, exists := GetContentType(CompleteFilePath)
+	if exists {
+		file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
+		if err == nil {
+			res.AddHeader("Content-Type", fileMediaType)
+			res.AddHeader("Content-Length", strconv.FormatInt(file.Size, 10))
+			res.AddHeader("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
+			if !OnlyMetadata {
+				res.Body = file.Contents
+			}
+			
+			res.write()
+		}
+	}
+}
+
+func (res *HttpResponse) SendError(Content string) {
+	responseContent := []byte(Content)
+	res.AddHeader("Content-Type", ERROR_MSG_CONTENT_TYPE)
+	res.AddHeader("Content-Length", strconv.Itoa(len(responseContent)))
+	res.Body = responseContent
+	res.write()
 }

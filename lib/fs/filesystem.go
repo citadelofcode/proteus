@@ -78,7 +78,7 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 }
 
 // Returns pointer to a FILE object that contains metadata for file available at the given path. The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
-func GetFile(CompleteFilePath string, ContentType string) (*File, error) {
+func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*File, error) {
 	var file File
 	fileStat, err := os.Stat(CompleteFilePath)
 	if err != nil {
@@ -87,12 +87,15 @@ func GetFile(CompleteFilePath string, ContentType string) (*File, error) {
 	Mode := fileStat.Mode()
 	if Mode.IsRegular() {
 		file.ContentType = strings.TrimSpace(ContentType)
-		fileContents, err := ReadFileContents(CompleteFilePath)
-		if err != nil {
-			return nil, err
-		}
+		if !OnlyMetadata {
+			fileContents, err := ReadFileContents(CompleteFilePath)
+			if err != nil {
+				return nil, err
+			}
 
-		file.Contents = fileContents
+			file.Contents = fileContents
+		} 
+	
 		file.LastModifiedAt = fileStat.ModTime()
 		file.Name = fileStat.Name()
 		file.Size = fileStat.Size()
