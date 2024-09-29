@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"fmt"
 	"slices"
+	"path/filepath"
+	"log"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
 const (
@@ -15,16 +18,30 @@ const (
 	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*$"
 )
 
+var SrvLogger *log.Logger = nil
+var ServerInstance *HttpServer = nil
 var DateHeaders []string
 var AllowedContentTypes map[string]string
 var ServerDefaults map[string]string
 var Versions map[string][]string
 
 
-func GetContentType(fileExtension string) (string, bool) {
-	fileExtension = strings.ToLower(fileExtension)
-	contentType, exists := AllowedContentTypes[fileExtension]
-	return contentType, exists
+func GetContentType(CompleteFilePath string) (string, bool) {
+	pathType, err := fs.GetPathType(CompleteFilePath)
+	if err == nil {
+		if pathType == fs.FILE_TYPE_PATH {
+			fileExtension := filepath.Ext(CompleteFilePath)
+			fileExtension = strings.TrimSpace(fileExtension)
+			fileExtension = strings.ToLower(fileExtension)
+			contentType, exists := AllowedContentTypes[fileExtension]
+			if exists {
+				return contentType, exists
+			} else {
+				return "application/octet-stream", true
+			}
+		}
+	}
+	return "", false
 }
 
 func GetDefaultHostname() string {
@@ -86,4 +103,21 @@ func IsMethodAllowed(version string, requestMethod string) bool {
 	}
 
 	return false
+}
+
+func GetResponseVersion(requestVersion string) string {
+	isCompatible := false
+
+	for _, version := range GetAllVersions() {
+		if strings.EqualFold(version, requestVersion) {
+			isCompatible = true
+			break
+		}
+	}
+
+	if isCompatible {
+		return requestVersion
+	} else {
+		return GetHighestVersion()
+	}
 }

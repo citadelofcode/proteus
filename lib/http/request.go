@@ -10,6 +10,7 @@ import (
 	"time"
 	"net/textproto"
 	"slices"
+	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
 // Structure to represent a HTTP request received by the web server.
@@ -26,6 +27,7 @@ type HttpRequest struct {
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
+	req.Version = GetHighestVersion()
 }
 
 func (req *HttpRequest) setReader(reader *bufio.Reader) {
@@ -94,17 +96,7 @@ func (req *HttpRequest) readHeader() error {
 
 			HeaderKey = strings.TrimSpace(HeaderKey)
 			HeaderValue = strings.TrimSpace(HeaderValue)
-
-			if slices.Contains(DateHeaders ,textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
-				_, err := time.Parse(time.RFC1123, HeaderValue)
-				_, errOne := time.Parse(time.ANSIC, HeaderValue)
-
-				if err == nil || errOne == nil {
-					req.Headers.Add(HeaderKey, HeaderValue)
-				}
-			} else {
-				req.Headers.Add(HeaderKey, HeaderValue)
-			}
+			req.AddHeader(HeaderKey, HeaderValue)
 		}
 	}
 
@@ -126,7 +118,17 @@ func (req *HttpRequest) readBody() error {
 	return nil
 }
 
-func (req *HttpRequest) isConditionalGet(FileModifiedTime time.Time) bool {
+func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
+	fileMediaType, exists := GetContentType(CompleteFilePath)
+	if !exists {
+		return false
+	}
+
+	file, err := fs.GetFile(CompleteFilePath, fileMediaType, true)
+	if err != nil {
+		return false
+	}
+
 	ok := req.Headers.Contains("If-Modified-Since")
 	if !ok {
 		return false
@@ -143,8 +145,22 @@ func (req *HttpRequest) isConditionalGet(FileModifiedTime time.Time) bool {
 			return false
 		}
 	}
-	if FileModifiedTime.After(LastModifiedSince) {
+	if file.LastModifiedAt.After(LastModifiedSince) {
 		return false
 	}
 	return true
+}
+
+// Adds a new key-value pair to the request headers collection.
+func (req *HttpRequest) AddHeader(HeaderKey string, HeaderValue string) {
+	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
+		_, err := time.Parse(time.RFC1123, HeaderValue)
+		_, errOne := time.Parse(time.ANSIC, HeaderValue)
+
+		if err == nil || errOne == nil {
+			req.Headers.Add(HeaderKey, HeaderValue)
+		}
+	} else {
+		req.Headers.Add(HeaderKey, HeaderValue)
+	}
 }

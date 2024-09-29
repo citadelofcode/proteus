@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -20,40 +19,44 @@ func NewRequest(Connection net.Conn) *HttpRequest {
 	return &httpRequest
 }
 
-func NewResponse(Connection net.Conn) *HttpResponse {
+func NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.initialize()
+	httpResponse.initialize(GetResponseVersion(request.Version))
 	writer := bufio.NewWriter(Connection)
 	httpResponse.setWriter(writer)
 	return &httpResponse
 }
 
 func NewServer() (*HttpServer, error) {
-	var server HttpServer
-	logger := log.New(os.Stdout, "", log.Ldate | log.Ltime)
-	server.SrvLogger = logger
-	server.HostAddress = "";
-	server.PortNumber = 0
-	ServerConfig, err := config.GetConfig()
-	if err != nil {
-		return nil, err
+	if SrvLogger == nil {
+		SrvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
 	}
 
-	DateHeaders = make([]string, 0)
-	DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
-	AllowedContentTypes = ServerConfig.AllowedContentTypes
-	ServerDefaults = ServerConfig.ServerDefaults
-	Versions = ServerConfig.GetVersionMap()
-	return &server, nil
+	if ServerInstance == nil {
+		var server HttpServer
+		server.HostAddress = "";
+		server.PortNumber = 0
+		ServerConfig, err := config.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		DateHeaders = make([]string, 0)
+		DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
+		AllowedContentTypes = ServerConfig.AllowedContentTypes
+		ServerDefaults = ServerConfig.ServerDefaults
+		Versions = ServerConfig.GetVersionMap()
+		ServerInstance = &server
+
+		return &server, nil
+	}
+
+	return ServerInstance, nil
 }
 
 func getRfc1123Time() string {
 	currentTime := time.Now().UTC()
 	return currentTime.Format(time.RFC1123)
-}
-
-func getW3CLogLine(req *HttpRequest, res *HttpResponse, ClientAddress string) string {
-	return fmt.Sprintf("%s %s %s %d %s", ClientAddress, req.Method, req.ResourcePath, res.StatusCode, req.Version)
 }
 
 func validateRoute(Route string) bool {
