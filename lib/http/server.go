@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 type HttpServer struct {
@@ -19,7 +20,7 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 	}
 	err := srv.StaticRouter.Add(Route, TargetPath)
 	if err != nil {
-		SrvLogger.Printf("AddStaticRoute() :: %s", err.Error())
+		LogError(fmt.Sprintf("AddStaticRoute() :: %s", err.Error()))
 		return
 	}
 }
@@ -40,20 +41,20 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	serverAddress := srv.HostAddress + ":" + strconv.Itoa(srv.PortNumber)
 	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		SrvLogger.Printf("Error occurred while setting up listener socket: %s", err.Error())
+		LogError(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()))
 		return
 	}
 	srv.Socket = server
 	defer srv.Socket.Close()
-	SrvLogger.Printf("Web server is listening at http://%s", serverAddress)
+	LogError(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
 
 	for {
 		clientConnection, err := srv.Socket.Accept()
 		if err != nil {
-			SrvLogger.Printf("Error occurred while accepting a new client: %s", err.Error())
+			LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
 			continue
 		}
-		SrvLogger.Printf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String())
+		LogError(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
 		go srv.handleClient(clientConnection)
 	}
 }
@@ -67,7 +68,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	switch httpRequest.Method {
 	case "GET":
 		if !IsMethodAllowed(httpResponse.Version, "GET") {
-			srv.logError("'GET' method is not allowed in HTTP version " + httpResponse.Version)
+			LogError("'GET' method is not allowed in HTTP version " + httpResponse.Version)
 			httpResponse.Status(StatusMethodNotAllowed)
 			httpResponse.AddHeader("Allow", GetAllowedMethods(httpResponse.Version))
 			httpResponse.SendError(StatusMethodNotAllowed.GetErrorContent())
@@ -75,7 +76,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
 		if !staticRouteExists {
-			srv.logError("A Static route matching the given resource does  not exist")
+			LogError("A Static route matching the given resource does  not exist")
 			httpResponse.Status(StatusNotFound)
 			httpResponse.SendError(StatusNotFound.GetErrorContent())
 			return
@@ -90,7 +91,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 	case "HEAD":
 		if !IsMethodAllowed(httpResponse.Version, "HEAD") {
-			srv.logError("'HEAD' method is not allowed in HTTP version " + httpResponse.Version)
+			LogError("'HEAD' method is not allowed in HTTP version " + httpResponse.Version)
 			httpResponse.Status(StatusMethodNotAllowed)
 			httpResponse.AddHeader("Allow", GetAllowedMethods(httpResponse.Version))
 			httpResponse.SendError(StatusMethodNotAllowed.GetErrorContent())
@@ -98,7 +99,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
 		if !staticRouteExists {
-			srv.logError("A Static route matching the given resource does  not exist")
+			LogError("A Static route matching the given resource does  not exist")
 			httpResponse.Status(StatusNotFound)
 			httpResponse.SendError(StatusNotFound.GetErrorContent())
 			return
@@ -107,13 +108,9 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpResponse.Status(StatusOK)
 		httpResponse.SendFile(TargetFilePath, true)
 	default:
-		srv.logError("The HTTP method is not supported by the server. Allowed Methods are - " + GetAllowedMethods(httpResponse.Version))
+		LogError("The HTTP method is not supported by the server. Allowed Methods are - " + GetAllowedMethods(httpResponse.Version))
 		httpResponse.Status(StatusMethodNotAllowed)
 		httpResponse.AddHeader("Allow", GetAllowedMethods(httpResponse.Version))
 		httpResponse.SendError(StatusMethodNotAllowed.GetErrorContent())
 	}
-}
-
-func (srv *HttpServer) logError(errorString string) {
-	SrvLogger.Print(errorString)
 }

@@ -42,28 +42,30 @@ func (res *HttpResponse) addResponseHeaders() {
 	res.Headers.Add("Server", GetServerName())
 }
 
-func (res *HttpResponse) write() error {
+func (res *HttpResponse) write() {
 	err := res.writeStatusLine()
 	if err != nil {
-		return err
+		LogError(err.Error())
+		return
 	}
 
 	err = res.writeHeaders()
 	if err != nil {
-		return err
+		LogError(err.Error())
+		return
 	}
 
 	err = res.writeBody()
 	if err != nil {
-		return err
+		LogError(err.Error())
+		return
 	}
 
 	err = res.writer.Flush()
 	if err != nil {
-		return err
+		LogError(err.Error())
+		return
 	}
-
-	return nil
 }
 
 func (res *HttpResponse) writeStatusLine() error {
@@ -169,6 +171,7 @@ func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) {
 	}
 }
 
+// Sends a the given error content as response back to the client.
 func (res *HttpResponse) SendError(Content string) {
 	responseContent := []byte(Content)
 	res.AddHeader("Content-Type", ERROR_MSG_CONTENT_TYPE)

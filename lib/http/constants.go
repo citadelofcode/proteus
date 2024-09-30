@@ -121,3 +121,11 @@ func GetResponseVersion(requestVersion string) string {
 		return GetHighestVersion()
 	}
 }
+
+func LogError(errorMsg string) {
+	if SrvLogger != nil {
+		SrvLogger.Printf("%s\n", errorMsg)
+	} else {
+		fmt.Printf("%s\n", errorMsg)
+	}
+}

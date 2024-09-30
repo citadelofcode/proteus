@@ -34,26 +34,27 @@ func (req *HttpRequest) setReader(reader *bufio.Reader) {
 	req.reader = reader
 }
 
-func (req *HttpRequest) read() error {
+func (req *HttpRequest) read() {
 	err := req.readHeader()
 	if err != nil {
-		return err
+		LogError(err.Error())
+		return
 	}
 
 	clength, ok := req.Headers.Get("Content-Length")
 	if ok {
 		req.ContentLength, err = strconv.Atoi(clength)
 		if err != nil {
-			return err
+			LogError(err.Error())
+			return
 		}
 
 		err = req.readBody()
 		if err != nil {
-			return err
+			LogError(err.Error())
+			return
 		}
 	}
-
-	return nil
 }
 
 func (req *HttpRequest) readHeader() error {
