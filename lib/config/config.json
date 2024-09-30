@@ -61,7 +61,8 @@
     "server_defaults": {
         "hostname": "localhost",
         "port": "8080",
-        "servername": "proteus"
+        "servername": "proteus",
+        "content_type": "application/octet-stream"
     },
     "date_headers": ["Date", "Expires", "If-Modified-Since", "Last-Modified"]
 }

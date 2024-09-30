@@ -15,7 +15,7 @@ const (
 	HEADER_LINE_SEPERATOR = "\r\n"
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
-	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*$"
+	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*"
 )
 
 var SrvLogger *log.Logger = nil
@@ -37,7 +37,7 @@ func GetContentType(CompleteFilePath string) (string, bool) {
 			if exists {
 				return contentType, exists
 			} else {
-				return "application/octet-stream", true
+				return strings.TrimSpace(ServerDefaults["content_type"]), true
 			}
 		}
 	}
