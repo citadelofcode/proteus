@@ -14,11 +14,17 @@ import (
 
 // Structure to represent a HTTP response sent back by the server to the client.
 type HttpResponse struct {
+	// Status code of the response being sent back to the client like 200, 203, 404 etc.
 	StatusCode int
+	// Status message associated with the response status code.
 	StatusMessage string
+	// HTTP version of the response being sent back.
 	Version string
+	// Collection of all response headers being sent by the server.
 	Headers Headers
+	// Complete contents of the response body.
 	Body []byte
+	// Streamed writer instance to write the response bytes to the network stream.
 	writer *bufio.Writer
 }
 

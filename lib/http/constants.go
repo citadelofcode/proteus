@@ -18,14 +18,20 @@ const (
 	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*"
 )
 
+// Global logger instance to log messages generated while HTTP server processes incoming requests.
 var SrvLogger *log.Logger = nil
+// Global instance of HTTP web server.
 var ServerInstance *HttpServer = nil
+// Collection of headers supported by the server that has a date value.
 var DateHeaders []string
+// List of content types supported by the web server.
 var AllowedContentTypes map[string]string
+// A map containing all the default server configuration values.
 var ServerDefaults map[string]string
+// List of all versions of HTTP supported by the web server.
 var Versions map[string][]string
 
-
+// Returns the file media type for the given file path.
 func GetContentType(CompleteFilePath string) (string, bool) {
 	pathType, err := fs.GetPathType(CompleteFilePath)
 	if err == nil {
@@ -44,23 +50,27 @@ func GetContentType(CompleteFilePath string) (string, bool) {
 	return "", false
 }
 
+// Returns the default hostname from the list of default configuration values.
 func GetDefaultHostname() string {
 	hostname := strings.TrimSpace(ServerDefaults["hostname"])
 	return hostname
 }
 
+// Returns the default port number from the list of default configuration values.
 func GetDefaultPort() int {
 	portNumberValue := ServerDefaults["port"]
 	portNumber, _ := strconv.Atoi(portNumberValue)
 	return portNumber
 }
 
+// Returns the server name value from the list of default configuration values.
 func GetServerName() string {
 	serverName := ServerDefaults["serverName"]
 	serverName = strings.TrimSpace(serverName)
 	return serverName
 }
 
+// Gets the highest version of HTTP supported by the web server.
 func GetHighestVersion() string {
 	var maxVersion float64 = 0.0
 	for versionNo := range Versions {
@@ -75,6 +85,7 @@ func GetHighestVersion() string {
 	return fmt.Sprintf("%.1f", maxVersion)
 }
 
+// Gets an array of all the versions of HTTP supported by the web server.
 func GetAllVersions() []string {
 	vers := make([]string, 0)
 	for versionNo := range Versions {
@@ -85,6 +96,7 @@ func GetAllVersions() []string {
 	return vers
 }
 
+// Gets the list of allowed HTTP methods supported by the web server for the given HTTP version.
 func GetAllowedMethods(version string) string {
 	for versionNo, AllowedMethods := range Versions {
 		if strings.EqualFold(versionNo, version) {
@@ -95,6 +107,7 @@ func GetAllowedMethods(version string) string {
 	return ""
 }
 
+// Checks if the given HTTP method is supported by the web server for the given version.
 func IsMethodAllowed(version string, requestMethod string) bool {
 	for versionNo, AllowedMethods := range Versions {
 		if strings.EqualFold(versionNo, version) && slices.Contains(AllowedMethods, requestMethod) {
@@ -105,6 +118,7 @@ func IsMethodAllowed(version string, requestMethod string) bool {
 	return false
 }
 
+// Returns the HTTP response version for the given request version value.
 func GetResponseVersion(requestVersion string) string {
 	isCompatible := false
 
@@ -122,6 +136,7 @@ func GetResponseVersion(requestVersion string) string {
 	}
 }
 
+// Logs an error message to the log file. If logger is not initialized, the error message is printed to stdout.
 func LogError(errorMsg string) {
 	if SrvLogger != nil {
 		SrvLogger.Printf("%s\n", errorMsg)
