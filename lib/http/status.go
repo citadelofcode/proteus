@@ -32,6 +32,7 @@ const (
 	StatusGatewayTimeout StatusCode = 504
 )
 
+// Gets the minified message assosciated with a HTTP status code.
 func (code StatusCode) GetStatusMessage() string {
 	switch code {
 		case StatusOK: 
@@ -93,6 +94,7 @@ func (code StatusCode) GetStatusMessage() string {
 	}
 }
 
+// Gets the default error content for a HTTP status code.
 func (code StatusCode) GetErrorContent() string {
 	responseString := ""
 	switch code {

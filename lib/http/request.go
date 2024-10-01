@@ -15,12 +15,19 @@ import (
 
 // Structure to represent a HTTP request received by the web server.
 type HttpRequest struct {
+	// HTTP request method like GET, POST, PUT etc.
 	Method string
+	// Resource path requested by the client.
 	ResourcePath string
+	// HTTP version that the request received complies with.
 	Version string
+	// Collection of all the request headers received.
 	Headers Headers
+	// Represents the complete contents of the request body.
 	Body []byte
+	// Total length of the request body (in bytes).
 	ContentLength int
+	// Streamed reader instance to read the HTTP request from the network stream.
 	reader *bufio.Reader
 }
 

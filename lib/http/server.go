@@ -7,13 +7,19 @@ import (
 	"fmt"
 )
 
+// Structure to create an instance of a web server.
 type HttpServer struct {
+	// Hostname of the web server instance.
 	HostAddress string
+	// Port number where web server instance is listening for incoming requests.
 	PortNumber int
+	// Server socket created and bound to the port number.
 	Socket net.Listener
+	// Router instance that contains static routes to be handled by the web server.
 	StaticRouter FileRoutes
 }
 
+// Define a static route and map to a static file or folder in the file system.
 func (srv *HttpServer) Static(Route string, TargetPath string) {
 	if srv.StaticRouter == nil {
 		srv.StaticRouter = make(FileRoutes)
@@ -25,6 +31,7 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 	}
 }
 
+// Setup the web server instance to listen for incoming HTTP requests at the given hostname and port number.
 func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	if PortNumber == 0 {
 		srv.PortNumber = GetDefaultPort()
@@ -59,6 +66,7 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	}
 }
 
+// Handles incoming HTTP requests sent from each individual client trying to connect to the web server instance.
 func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer ClientConnection.Close()
 	httpRequest := NewRequest(ClientConnection)

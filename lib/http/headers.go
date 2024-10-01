@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+// Represents a collection of headers (request or response).
 type Headers map[string][]string
 
+// Add a new key-value pair to the collection of headers.
 func (headers Headers) Add(key string, value string) {
 	key = textproto.CanonicalMIMEHeaderKey(key)
 	valueParts := strings.Split(value, ",")
@@ -18,6 +20,7 @@ func (headers Headers) Add(key string, value string) {
 	}
 }
 
+// Gets the value for a given header key from the collection of headers. The function also returns a boolean value to indicate if the key was found in the collection.
 func (headers Headers) Get(key string) (string, bool) {
 	key = textproto.CanonicalMIMEHeaderKey(key)
 	valueParts, ok := headers[key]
@@ -28,6 +31,7 @@ func (headers Headers) Get(key string) (string, bool) {
 	}
 }
 
+// Returns a boolean value to indicate if the given header key is available in the header collection.
 func (headers Headers) Contains(key string) bool {
 	key = textproto.CanonicalMIMEHeaderKey(key)
 	_, ok := headers[key]
