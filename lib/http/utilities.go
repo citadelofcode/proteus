@@ -43,7 +43,8 @@ func NewServer() (*HttpServer, error) {
 		if err != nil {
 			return nil, err
 		}
-
+		server.innerRouter = Router{}
+		server.innerRouter.StaticRoutes = make(map[string]string)
 		DateHeaders = make([]string, 0)
 		DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
 		AllowedContentTypes = ServerConfig.AllowedContentTypes

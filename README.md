@@ -15,3 +15,9 @@ go build -o proteus.out
 # Below command runs the executable file.
 ./proteus.out
 ```
+
+## Compliance
+
+The `proteus` web server is compliant with the below RFCs.
+
+- [HTTP/1.0 - RFC 1945](https://datatracker.ietf.org/doc/html/rfc1945)

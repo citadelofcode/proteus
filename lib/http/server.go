@@ -15,18 +15,15 @@ type HttpServer struct {
 	PortNumber int
 	// Server socket created and bound to the port number.
 	Socket net.Listener
-	// Router instance that contains static routes to be handled by the web server.
-	StaticRouter FileRoutes
+	// Router instance that contains all the routes and their associated handlers.
+	innerRouter Router
 }
 
 // Define a static route and map to a static file or folder in the file system.
 func (srv *HttpServer) Static(Route string, TargetPath string) {
-	if srv.StaticRouter == nil {
-		srv.StaticRouter = make(FileRoutes)
-	}
-	err := srv.StaticRouter.Add(Route, TargetPath)
+	err := srv.innerRouter.AddStatic(Route, TargetPath)
 	if err != nil {
-		LogError(fmt.Sprintf("AddStaticRoute() :: %s", err.Error()))
+		LogError(fmt.Sprintf("Adding Static Route to Server :: %s", err.Error()))
 		return
 	}
 }
@@ -82,7 +79,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			httpResponse.SendError(StatusMethodNotAllowed.GetErrorContent())
 			return
 		}
-		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
+		TargetFilePath, staticRouteExists := srv.innerRouter.MatchStatic(httpRequest.ResourcePath)
 		if !staticRouteExists {
 			LogError("A Static route matching the given resource does  not exist")
 			httpResponse.Status(StatusNotFound)
@@ -105,7 +102,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			httpResponse.SendError(StatusMethodNotAllowed.GetErrorContent())
 			return
 		}
-		TargetFilePath, staticRouteExists := srv.StaticRouter.Match(httpRequest.ResourcePath)
+		TargetFilePath, staticRouteExists := srv.innerRouter.MatchStatic(httpRequest.ResourcePath)
 		if !staticRouteExists {
 			LogError("A Static route matching the given resource does  not exist")
 			httpResponse.Status(StatusNotFound)

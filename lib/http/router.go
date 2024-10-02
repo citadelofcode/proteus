@@ -7,14 +7,19 @@ import (
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
-// Holds all the static routes and the mapped target folder in the local file system.
-type FileRoutes map[string]string
+// Represents a handler function that is executed once any received request is parsed. You can define different handlers for different routes and HTTP methods.
+type Handler func (*HttpRequest, *HttpResponse)
 
-// Added a new static route and target folder to the collection of file routes.
-func (sr FileRoutes) Add(RoutePath string, TargetPath string) error {
+// Structure to hold all the routes and the associated routing logic.
+type Router struct {
+	StaticRoutes map[string]string
+}
+
+// Added a new static route and target folder to the static routes collection.
+func (rtr *Router) AddStatic(RoutePath string, TargetPath string) error {
 	RoutePath = strings.TrimSpace(RoutePath)
 	TargetPath = strings.TrimSpace(TargetPath)
-	_, ok := sr[RoutePath]
+	_, ok := rtr.StaticRoutes[RoutePath]
 	if ok {
 		return errors.New("static route already exists in server")
 	}
@@ -33,19 +38,19 @@ func (sr FileRoutes) Add(RoutePath string, TargetPath string) error {
 	if PathType == fs.FILE_TYPE_PATH {
 		return errors.New("target path should be a directory")
 	}
-	sr[RoutePath] = TargetPath
+	rtr.StaticRoutes[RoutePath] = TargetPath
 	return nil
 }
 
 // Gets the target folder path mapped to the given static route.
-func (sr FileRoutes) Get(Route string) (string, bool) {
-	targetPath, ok := sr[Route]
+func (rtr *Router) GetStatic(Route string) (string, bool) {
+	targetPath, ok := rtr.StaticRoutes[Route]
 	return targetPath, ok
 }
 
 // Matches the request path from HTTP request to all the configured static routes and returns the matched route's target path. This target path will be combined with the remaining unmatched part of the request path and returned back to the calling function.
-func (sr FileRoutes) Match(RequestPath string) (string, bool) {
-	for staticRoute, targetPath := range sr {
+func (rtr *Router) MatchStatic(RequestPath string) (string, bool) {
+	for staticRoute, targetPath := range rtr.StaticRoutes {
 		if strings.HasPrefix(RequestPath, staticRoute) {
 			RequestPath, _ = strings.CutPrefix(RequestPath, staticRoute)
 			TargetFilePath := filepath.Join(targetPath, RequestPath)
