@@ -4,7 +4,7 @@ Proteus is a versatile web server framework written using Go. Currently, this fr
 
 ## Running the project
 
-To build and run the project, execute the following commands on project root directory.
+To build and run the project, execute the following commands on the project's root directory.
 
 ```bash
 # Below command builds the project and generates the output executable file.
