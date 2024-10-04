@@ -137,10 +137,6 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
 		return false
 	}
 
-	ok := req.Headers.Contains("If-Modified-Since")
-	if !ok {
-		return false
-	}
 	LastModifiedString, ok := req.Headers.Get("If-Modified-Since")
 	if !ok {
 		return false
