@@ -30,10 +30,3 @@ func (headers Headers) Get(key string) (string, bool) {
 		return "", false
 	}
 }
-
-// Returns a boolean value to indicate if the given header key is available in the header collection.
-func (headers Headers) Contains(key string) bool {
-	key = textproto.CanonicalMIMEHeaderKey(key)
-	_, ok := headers[key]
-	return ok
-}
