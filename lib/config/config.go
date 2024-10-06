@@ -12,6 +12,16 @@ type HttpVersion struct {
 	AllowedMethods []string `json:"allowed_methods"`
 }
 
+// Structure to represent individial HTTP Status Code information.
+type HttpStatus struct {
+	// HTTP status code. For example - 200, 201 etc.
+	Code int
+	// HTTP status message. For example - OK, Created etc.
+	Message string
+	// Error description associated with the status code. This is applicableonly for error status codes (>= 400). For other status codes, the field contains an empty string.
+	ErrorDescription string
+}
+
 // Structure to hold the configuration information exported from "config.json" file.
 type Configuration struct {
 	// List of content types supported by the server. It is represented as a map with the key value being a file extension and the value pointing to the media type corresponding to the file extension.
@@ -22,6 +32,8 @@ type Configuration struct {
 	ServerDefaults map[string]string `json:"server_defaults"`
 	// List of date headers processed by the server instance.
 	DateHeaders []string `json:"date_headers"`
+	// List of response status codes
+	ResponseStatus []HttpStatus `json:"status_codes"`
 }
 
 // Returns the versions array in server configuration as a map with version number as its key and the array of allowed methods as its value.

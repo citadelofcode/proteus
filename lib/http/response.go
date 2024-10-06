@@ -45,7 +45,7 @@ func (res *HttpResponse) addGeneralHeaders() {
 }
 
 func (res *HttpResponse) addResponseHeaders() {
-	res.Headers.Add("Server", GetServerName())
+	res.Headers.Add("Server", GetServerDefaultsValue("server_name"))
 }
 
 func (res *HttpResponse) write() {
