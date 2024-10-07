@@ -50,6 +50,15 @@ func NewServer() (*HttpServer, error) {
 		AllowedContentTypes = ServerConfig.AllowedContentTypes
 		ServerDefaults = ServerConfig.ServerDefaults
 		Versions = ServerConfig.GetVersionMap()
+		ResponseStatusCodes = make([]respStatus, 0)
+		for _, stat := range ServerConfig.ResponseStatus {
+			newStat := respStatus{
+				Code: StatusCode(stat.Code),
+				Message: stat.Message,
+				ErrorDescription: stat.ErrorDescription,
+			}
+			ResponseStatusCodes = append(ResponseStatusCodes, newStat)
+		}
 		ServerInstance = &server
 
 		return &server, nil

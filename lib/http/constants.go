@@ -31,6 +31,19 @@ var ServerDefaults map[string]string
 // List of all versions of HTTP supported by the web server.
 var Versions map[string][]string
 
+// Structure to represent a response status code and its associated information.
+type respStatus struct {
+	// HTTP response status code.
+	Code StatusCode
+	// Short message for the corresponding status code.
+	Message string
+	// Error description for error status codes (>=400).
+	ErrorDescription string
+}
+
+// List of response status codes and their associated information.
+var ResponseStatusCodes []respStatus
+
 // Returns the file media type for the given file path.
 func GetContentType(CompleteFilePath string) (string, bool) {
 	pathType, err := fs.GetPathType(CompleteFilePath)
@@ -63,11 +76,11 @@ func GetDefaultPort() int {
 	return portNumber
 }
 
-// Returns the server name value from the list of default configuration values.
-func GetServerName() string {
-	serverName := ServerDefaults["serverName"]
-	serverName = strings.TrimSpace(serverName)
-	return serverName
+// Returns the value for the given key from server default configuration values.
+func GetServerDefaultsValue(key string) string {
+	value := ServerDefaults[strings.TrimSpace(key)]
+	value = strings.TrimSpace(value)
+	return value
 }
 
 // Gets the highest version of HTTP supported by the web server.
