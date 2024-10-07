@@ -29,12 +29,15 @@ type HttpRequest struct {
 	ContentLength int
 	// Streamed reader instance to read the HTTP request from the network stream.
 	reader *bufio.Reader
+	// Contains the target file path in case the request is for a static file.
+	staticFilePath string
 }
 
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
 	req.Version = GetHighestVersion()
+	req.staticFilePath = ""
 }
 
 func (req *HttpRequest) setReader(reader *bufio.Reader) {
@@ -44,7 +47,7 @@ func (req *HttpRequest) setReader(reader *bufio.Reader) {
 func (req *HttpRequest) read() {
 	err := req.readHeader()
 	if err != nil {
-		LogError(err.Error())
+		LogError(fmt.Sprintf("Error while reading request headers: %s\n", err.Error()))
 		return
 	}
 
@@ -52,13 +55,13 @@ func (req *HttpRequest) read() {
 	if ok {
 		req.ContentLength, err = strconv.Atoi(clength)
 		if err != nil {
-			LogError(err.Error())
+			LogError(fmt.Sprintf("Error while reading value of Content-Length: %s\n", err.Error()))
 			return
 		}
 
 		err = req.readBody()
 		if err != nil {
-			LogError(err.Error())
+			LogError(fmt.Sprintf("Error while reading request body: %s\n", err.Error()))
 			return
 		}
 	}
@@ -127,6 +130,10 @@ func (req *HttpRequest) readBody() error {
 }
 
 func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
+	if !strings.EqualFold(req.Method, "GET") {
+		return false
+	}
+
 	fileMediaType, exists := GetContentType(CompleteFilePath)
 	if !exists {
 		return false

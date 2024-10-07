@@ -5,9 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
-	"regexp"
 	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
@@ -45,6 +43,7 @@ func NewServer() (*HttpServer, error) {
 		}
 		server.innerRouter = Router{}
 		server.innerRouter.StaticRoutes = make(map[string]string)
+		server.innerRouter.DynamicRoutes = make(map[string]Handler)
 		DateHeaders = make([]string, 0)
 		DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
 		AllowedContentTypes = ServerConfig.AllowedContentTypes
@@ -71,23 +70,4 @@ func NewServer() (*HttpServer, error) {
 func getRfc1123Time() string {
 	currentTime := time.Now().UTC()
 	return currentTime.Format(time.RFC1123)
-}
-
-// Validates if a given route is syntactically correct.
-func validateRoute(Route string) bool {
-	if strings.HasPrefix(Route, "//") || !strings.HasPrefix(Route, "/") {
-		return false
-	}
-
-	RouteName := strings.TrimPrefix(Route, "/")
-	isRouteValid, err := regexp.MatchString(VALIDATE_ROUTE_PATTERN, RouteName)
-	if err != nil {
-		return false
-	}
-
-	if !isRouteValid {
-		return false
-	}
-	
-	return true
 }
