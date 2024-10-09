@@ -11,12 +11,28 @@ import (
 // Represents a handler function that is executed once any received request is parsed. You can define different handlers for different routes and HTTP methods.
 type Handler func (*HttpRequest, *HttpResponse)
 
+// Structure to contain information about a single route declared in the Router.
+type Route struct {
+	// Is true if the route path being defined points to a static folder path. Is false if the route path has a dynamic handler declared.
+	IsStatic bool
+	// Defined only for static routes. This field contains the target folder path mapped to the given route path. It is assigned an empty string for dynamic routes.
+	StaticFolderPath string
+	// Handler function to be executed for the route paths.
+	RouteHandler Handler
+	// Represents the order in which the route was defined by the users. This also determines the priority of a path being chosen when a request is being processed.
+	SequenceNumber int
+	// HTTP method for which the route is defined
+	Method string
+	// Route path being defined for the router
+	RoutePath string
+}
+
 // Structure to hold all the routes and the associated routing logic.
 type Router struct {
-	// Collection of all static routes defined by the user.
-	StaticRoutes map[string]string
-	// Collection of all dynamic routes and their corresponding handlers defined.
-	DynamicRoutes map[string]Handler
+	// Collection of all routes defined in the router.
+	Routes []Route
+	// Contains the last sequence number generated for a route defined for the router.
+	LastSequenceNumber int
 }
 
 // Validates if a given route is syntactically correct.
@@ -38,14 +54,12 @@ func (rtr *Router) validateRoute(Route string) bool {
 	return true
 }
 
-// Added a new static route and target folder to the static routes collection.
-func (rtr *Router) addStaticRoute(RoutePath string, TargetPath string) error {
+// Adds a new static route and target folder to the static routes collection.
+func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath string) error {
 	RoutePath = strings.TrimSpace(RoutePath)
 	TargetPath = strings.TrimSpace(TargetPath)
-	_, ok := rtr.StaticRoutes[RoutePath]
-	if ok {
-		return errors.New("static route already exists in router")
-	}
+	Method = strings.TrimSpace(Method)
+	Method = strings.ToUpper(Method)
 	isRouteValid := rtr.validateRoute(RoutePath)
 	if !isRouteValid {
 		return errors.New("route contains one or more invalid characters")
@@ -61,42 +75,47 @@ func (rtr *Router) addStaticRoute(RoutePath string, TargetPath string) error {
 	if PathType == fs.FILE_TYPE_PATH {
 		return errors.New("target path should be a directory")
 	}
-	rtr.StaticRoutes[RoutePath] = TargetPath
+	rtr.LastSequenceNumber++
+	routeObj := Route{
+		IsStatic: true,
+		StaticFolderPath: TargetPath,
+		RouteHandler: StaticFileHandler,
+		SequenceNumber: rtr.LastSequenceNumber,
+		Method: Method,
+		RoutePath: RoutePath,
+	}
+	
+	rtr.Routes = append(rtr.Routes, routeObj)
 	return nil
 }
 
-// Matches the request path from HTTP request to all the configured static routes and returns the matched route's target path. This target path will be combined with the remaining unmatched part of the request path and returned back to the calling function.
-func (rtr *Router) matchStatic(RequestPath string) (string, bool) {
-	for staticRoute, targetPath := range rtr.StaticRoutes {
-		if strings.HasPrefix(RequestPath, staticRoute) {
-			RequestPath, _ = strings.CutPrefix(RequestPath, staticRoute)
-			TargetFilePath := filepath.Join(targetPath, RequestPath)
-			return TargetFilePath, true
-		}
+/* func (rtr *Router) processRequest(request *HttpRequest, response *HttpResponse) {
+	Method := strings.TrimSpace(request.Method)
+	Method = strings.ToUpper(Method)
+
+} */
+
+// Adds a new dynamic route and its associated handler function to the collection of routes defined in the router instance.
+func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc Handler) error {
+	RoutePath = strings.TrimSpace(RoutePath)
+	Method = strings.TrimSpace(Method)
+	Method = strings.ToUpper(Method)
+
+	isRouteValid := rtr.validateRoute(RoutePath)
+	if !isRouteValid {
+		return errors.New("route path contains one or more invalid characters")
 	}
 
-	return "", false
-}
-
-func (rtr *Router) addDynamicRoute(RouteKey string, handlerFunc Handler) error {
-	RouteKey = strings.TrimSpace(RouteKey)
-	_, ok := rtr.DynamicRoutes[RouteKey]
-	if ok {
-		return errors.New("dynamic route already exists in router")
+	rtr.LastSequenceNumber++
+	routeObj := Route{
+		IsStatic: false,
+		StaticFolderPath: "",
+		RouteHandler: handlerFunc,
+		SequenceNumber: rtr.LastSequenceNumber,
+		Method: Method,
+		RoutePath: RoutePath,
 	}
-
-	_, RoutePath, found := strings.Cut(RouteKey, " ")
-	if found {
-		RoutePath = strings.TrimSpace(RoutePath)
-		isRouteValid := rtr.validateRoute(RoutePath)
-		if !isRouteValid {
-			return errors.New("route path contains one or more invalid characters")
-		}
-
-		rtr.DynamicRoutes[RouteKey] = handlerFunc
-	} else {
-		return errors.New("invalid route key value provided")
-	}
-
+	
+	rtr.Routes = append(rtr.Routes, routeObj)
 	return nil
 }

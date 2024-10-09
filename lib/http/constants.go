@@ -152,10 +152,12 @@ func GetResponseVersion(requestVersion string) string {
 // Logs an error message to the log file. If logger is not initialized, the error message is printed to stdout.
 func LogError(Msg string) {
 	Msg = strings.TrimSpace(Msg)
-	templateString := fmt.Sprintf("%s  %s  ERROR  %s", getRfc1123Time(), GetServerDefaultsValue("server_name"), Msg)
+	templateString := ""
 	if SrvLogger != nil {
+		templateString = fmt.Sprintf("%s  ERROR  %s", GetServerDefaultsValue("server_name"), Msg)
 		SrvLogger.Printf("%s\n", templateString)
 	} else {
+		templateString = fmt.Sprintf("%s  %s  ERROR  %s", getRfc1123Time(), GetServerDefaultsValue("server_name"), Msg)
 		fmt.Printf("%s\n", templateString)
 	}
 }
@@ -163,10 +165,12 @@ func LogError(Msg string) {
 // Logs a message to the log file. If logger is not initialized, the message is printed to stdout.
 func LogInfo(Msg string) {
 	Msg = strings.TrimSpace(Msg)
-	templateString := fmt.Sprintf("%s  %s  INFO  %s", getRfc1123Time(), GetServerDefaultsValue("server_name"), Msg)
+	templateString := ""
 	if SrvLogger != nil {
+		templateString = fmt.Sprintf("%s  INFO  %s", GetServerDefaultsValue("server_name"), Msg)
 		SrvLogger.Printf("%s\n", templateString)
 	} else {
+		templateString = fmt.Sprintf("%s  %s  INFO  %s", getRfc1123Time(), GetServerDefaultsValue("server_name"), Msg)
 		fmt.Printf("%s\n", templateString)
 	}
 }

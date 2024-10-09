@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"time"
+
 	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
@@ -42,8 +43,7 @@ func NewServer() (*HttpServer, error) {
 			return nil, err
 		}
 		server.innerRouter = Router{}
-		server.innerRouter.StaticRoutes = make(map[string]string)
-		server.innerRouter.DynamicRoutes = make(map[string]Handler)
+		server.innerRouter.Routes = make([]Route, 0)
 		DateHeaders = make([]string, 0)
 		DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
 		AllowedContentTypes = ServerConfig.AllowedContentTypes
