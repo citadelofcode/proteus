@@ -21,9 +21,15 @@ type HttpServer struct {
 
 // Define a static route and map to a static file or folder in the file system.
 func (srv *HttpServer) Static(Route string, TargetPath string) {
-	err := srv.innerRouter.addStaticRoute(Route, TargetPath)
+	err := srv.innerRouter.addStaticRoute("GET", Route, TargetPath)
 	if err != nil {
-		LogError(fmt.Sprintf("Adding Static Route to Server :: %s", err.Error()))
+		LogError(fmt.Sprintf("Error occurred while adding GET static route path - %s :: %s", Route, err.Error()))
+		return
+	}
+
+	err = srv.innerRouter.addStaticRoute("HEAD", Route, TargetPath)
+	if err != nil {
+		LogError(fmt.Sprintf("Error occurred while adding HEAD static route path - %s :: %s", Route, err.Error()))
 		return
 	}
 }
@@ -69,53 +75,20 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	httpRequest := NewRequest(ClientConnection)
 	httpRequest.read()
 	httpResponse := NewResponse(ClientConnection, httpRequest)
-	
-	switch httpRequest.Method {
-	case "GET":
-		if !IsMethodAllowed(httpResponse.Version, "GET") {
-			httpResponse.Status(StatusMethodNotAllowed)
-			ErrorHandler(httpRequest, httpResponse)
-			return
-		}
-		TargetFilePath, staticRouteExists := srv.innerRouter.matchStatic(httpRequest.ResourcePath)
-		if staticRouteExists {
-			httpRequest.staticFilePath = TargetFilePath
-			StaticFileHandler(httpRequest, httpResponse)
-			return	
-		}
-	case "HEAD":
-		if !IsMethodAllowed(httpResponse.Version, "HEAD") {
-			httpResponse.Status(StatusMethodNotAllowed)
-			ErrorHandler(httpRequest, httpResponse)
-			return
-		}
-		TargetFilePath, staticRouteExists := srv.innerRouter.matchStatic(httpRequest.ResourcePath)
-		if !staticRouteExists {
-			LogError("A Static route matching the given resource does  not exist")
-			httpResponse.Status(StatusNotFound)
-			ErrorHandler(httpRequest, httpResponse)
-			return
-		}
 
-		httpRequest.staticFilePath = TargetFilePath
-		StaticFileHandler(httpRequest, httpResponse)
-	case "POST":
-		if !IsMethodAllowed(httpResponse.Version, "POST") {
-			httpResponse.Status(StatusMethodNotAllowed)
-			ErrorHandler(httpRequest, httpResponse)
-			return
-		}
-	default:
+	if !IsMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
 		httpResponse.Status(StatusMethodNotAllowed)
 		ErrorHandler(httpRequest, httpResponse)
+	} else {
+		// srv.innerRouter.processRequest(httpRequest, httpResponse)
+		fmt.Println("Coming soon - A process request function that will process the incoming request.")
 	}
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
 func (srv *HttpServer) Get(routePath string, handlerFunc Handler) {
 	routePath = strings.TrimSpace(routePath)
-	key := fmt.Sprintf("GET %s", routePath)
-	err := srv.innerRouter.addDynamicRoute(key, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("GET", routePath, handlerFunc)
 	if err != nil {
 		LogError(fmt.Sprintf("Adding Dynamic Route to Server :: %s", err.Error()))
 		return
@@ -125,8 +98,7 @@ func (srv *HttpServer) Get(routePath string, handlerFunc Handler) {
 // Creates a new HEAD endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
 func (srv *HttpServer) Head(routePath string, handlerFunc Handler) {
 	routePath = strings.TrimSpace(routePath)
-	key := fmt.Sprintf("HEAD %s", routePath)
-	err := srv.innerRouter.addDynamicRoute(key, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("HEAD", routePath, handlerFunc)
 	if err != nil {
 		LogError(fmt.Sprintf("Adding Dynamic Route to Server :: %s", err.Error()))
 		return
@@ -136,8 +108,7 @@ func (srv *HttpServer) Head(routePath string, handlerFunc Handler) {
 // Creates a new POST endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
 func (srv *HttpServer) Post(routePath string, handlerFunc Handler) {
 	routePath = strings.TrimSpace(routePath)
-	key := fmt.Sprintf("POST %s", routePath)
-	err := srv.innerRouter.addDynamicRoute(key, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("POST", routePath, handlerFunc)
 	if err != nil {
 		LogError(fmt.Sprintf("Adding Dynamic Route to Server :: %s", err.Error()))
 		return

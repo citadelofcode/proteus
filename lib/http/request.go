@@ -10,6 +10,7 @@ import (
 	"time"
 	"net/textproto"
 	"slices"
+	"net/url"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
@@ -31,6 +32,10 @@ type HttpRequest struct {
 	reader *bufio.Reader
 	// Contains the target file path in case the request is for a static file.
 	staticFilePath string
+	// Collection of all query parameters
+	Query Params
+	// Collection of all path parameter values
+	Segments Params
 }
 
 func (req *HttpRequest) initialize() {
@@ -38,6 +43,8 @@ func (req *HttpRequest) initialize() {
 	req.Headers = make(Headers)
 	req.Version = GetHighestVersion()
 	req.staticFilePath = ""
+	req.Query = nil
+	req.Segments = nil
 }
 
 func (req *HttpRequest) setReader(reader *bufio.Reader) {
@@ -48,6 +55,12 @@ func (req *HttpRequest) read() {
 	err := req.readHeader()
 	if err != nil {
 		LogError(fmt.Sprintf("Error while reading request headers: %s\n", err.Error()))
+		return
+	}
+
+	err = req.parseQueryParams()
+	if err != nil {
+		LogError(fmt.Sprintf("Error while parsing query parameters: %s\n", err.Error()))
 		return
 	}
 
@@ -124,6 +137,21 @@ func (req *HttpRequest) readBody() error {
 			}
 			req.Body[index] = bodyByte
 		}
+	}
+
+	return nil
+}
+
+func (req *HttpRequest) parseQueryParams() error {
+	req.Query = make(Params)
+	parsedUrl, err := url.Parse(req.ResourcePath)
+	if err != nil {
+		return err
+	}
+
+	queryParams := parsedUrl.Query()
+	for paramName, paramValues := range queryParams {
+		req.Query.Add(paramName, paramValues)
 	}
 
 	return nil
