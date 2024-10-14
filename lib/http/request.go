@@ -20,7 +20,7 @@ type HttpRequest struct {
 	Method string
 	// Resource path requested by the client.
 	ResourcePath string
-	// HTTP version that the request received complies with.
+	// HTTP version that the request complies with.
 	Version string
 	// Collection of all the request headers received.
 	Headers Headers
@@ -38,6 +38,7 @@ type HttpRequest struct {
 	Segments Params
 }
 
+// Initializes the instance of HttpRequest with default values for all its fields. 
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
@@ -47,10 +48,12 @@ func (req *HttpRequest) initialize() {
 	req.Segments = nil
 }
 
+// Assigns the stream reader field of HttpRequest with a valid request stream.
 func (req *HttpRequest) setReader(reader *bufio.Reader) {
 	req.reader = reader
 }
 
+// Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.
 func (req *HttpRequest) read() {
 	err := req.readHeader()
 	if err != nil {
@@ -80,6 +83,7 @@ func (req *HttpRequest) read() {
 	}
 }
 
+// Reads the values for all request headers and stores them in the HttpRequest instance.
 func (req *HttpRequest) readHeader() error {
 	RequestLineProcessed := false
 	HeaderProcessingCompleted := false
@@ -127,6 +131,7 @@ func (req *HttpRequest) readHeader() error {
 	return nil
 }
 
+// Reads the body from request byte stream and stores them in the HttpRequest instance.
 func (req *HttpRequest) readBody() error {
 	if req.ContentLength > 0 {
 		req.Body = make([]byte, req.ContentLength)
@@ -142,6 +147,7 @@ func (req *HttpRequest) readBody() error {
 	return nil
 }
 
+// Parses all the query paramaters from the request URL and stores in the HttpRequest instance.
 func (req *HttpRequest) parseQueryParams() error {
 	req.Query = make(Params)
 	parsedUrl, err := url.Parse(req.ResourcePath)
@@ -157,6 +163,7 @@ func (req *HttpRequest) parseQueryParams() error {
 	return nil
 }
 
+// Checks if the given HTTP GET request made is a CONDITIONAL GET request.
 func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
 	if !strings.EqualFold(req.Method, "GET") {
 		return false

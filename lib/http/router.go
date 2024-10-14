@@ -35,13 +35,13 @@ type Router struct {
 	LastSequenceNumber int
 }
 
-// Validates if a given route is syntactically correct.
-func (rtr *Router) validateRoute(Route string) bool {
-	if strings.HasPrefix(Route, "//") || !strings.HasPrefix(Route, "/") {
+// Validates if a given route path is syntactically correct.
+func (rtr *Router) validateRoute(routePath string) bool {
+	if strings.HasPrefix(routePath, "//") || !strings.HasPrefix(routePath, "/") {
 		return false
 	}
 
-	RouteName := strings.TrimPrefix(Route, "/")
+	RouteName := strings.TrimPrefix(routePath, "/")
 	isRouteValid, err := regexp.MatchString(VALIDATE_ROUTE_PATTERN, RouteName)
 	if err != nil {
 		return false
@@ -88,12 +88,6 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 	rtr.Routes = append(rtr.Routes, routeObj)
 	return nil
 }
-
-/* func (rtr *Router) processRequest(request *HttpRequest, response *HttpResponse) {
-	Method := strings.TrimSpace(request.Method)
-	Method = strings.ToUpper(Method)
-
-} */
 
 // Adds a new dynamic route and its associated handler function to the collection of routes defined in the router instance.
 func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc Handler) error {

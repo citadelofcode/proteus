@@ -28,6 +28,7 @@ type HttpResponse struct {
 	writer *bufio.Writer
 }
 
+// // Initializes the instance of HttpResponse with default values for all its fields.
 func (res *HttpResponse) initialize(version string) {
 	res.Version = strings.TrimSpace(version)
 	res.Headers = make(Headers)
@@ -36,18 +37,22 @@ func (res *HttpResponse) initialize(version string) {
 	res.Version = GetHighestVersion()
 }
 
+// // Assigns the stream writer field of HttpResponse with a valid response stream.
 func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 	res.writer = writer
 }
 
+// Adds all the general HTTP headers to the HttpResponse instance.
 func (res *HttpResponse) addGeneralHeaders() {
 	res.Headers.Add("Date", getRfc1123Time())
 }
 
+// Adds all the default response HTTP headers to the HttpResponse instance.
 func (res *HttpResponse) addResponseHeaders() {
 	res.Headers.Add("Server", GetServerDefaultsValue("server_name"))
 }
 
+// Writes bytes of data to response byte stream from the HttpResponse instance.
 func (res *HttpResponse) write() {
 	err := res.writeStatusLine()
 	if err != nil {
@@ -74,6 +79,7 @@ func (res *HttpResponse) write() {
 	}
 }
 
+// Writes the HTTP response status line to the response byte stream.
 func (res *HttpResponse) writeStatusLine() error {
 	if res.writer == nil {
 		return errors.New("error occurred while writing response status line: writer object not initialized")
@@ -95,6 +101,7 @@ func (res *HttpResponse) writeStatusLine() error {
 	return nil
 }
 
+// Writes the HTTP response headers to the response byte stream.
 func (res *HttpResponse) writeHeaders() error {
 	if res.writer == nil {
 		return errors.New("error occurred while writing response headers: writer object not initialized")
@@ -112,6 +119,7 @@ func (res *HttpResponse) writeHeaders() error {
 	return nil
 }
 
+// Writes the response body to the response byte stream.
 func (res *HttpResponse) writeBody() error {
 	if res.writer == nil {
 		return errors.New("error occurred while writing response body: writer object not initialized")
