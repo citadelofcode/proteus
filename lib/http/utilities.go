@@ -11,7 +11,7 @@ import (
 )
 
 // Creates and returns a new instance of HTTP request.
-func NewRequest(Connection net.Conn) *HttpRequest {
+func newRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
 	httpRequest.initialize()
 	reader := bufio.NewReader(Connection)
@@ -20,7 +20,7 @@ func NewRequest(Connection net.Conn) *HttpRequest {
 }
 
 // Creates and returns a new instance of HTTP response.
-func NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
+func newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
 	httpResponse.initialize(GetResponseVersion(request.Version))
 	writer := bufio.NewWriter(Connection)
@@ -28,7 +28,7 @@ func NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	return &httpResponse
 }
 
-// Creates and returns a new instance of HTTP web server.
+// Returns an instance of HTTP web server.
 func NewServer() (*HttpServer, error) {
 	if SrvLogger == nil {
 		SrvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
