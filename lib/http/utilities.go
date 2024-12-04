@@ -6,12 +6,34 @@ import (
 	"net"
 	"os"
 	"time"
-
 	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
-// Creates and returns a new instance of HTTP request.
-func NewRequest(Connection net.Conn) *HttpRequest {
+// Initializes the global variables used in the 'http' package.
+func init() {
+	ServerConfig, err := config.GetConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	DateHeaders = make([]string, 0)
+	DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
+	AllowedContentTypes = ServerConfig.AllowedContentTypes
+	ServerDefaults = ServerConfig.ServerDefaults
+	Versions = ServerConfig.GetVersionMap()
+	ResponseStatusCodes = make([]respStatus, 0)
+	for _, stat := range ServerConfig.ResponseStatus {
+		newStat := respStatus{
+			Code: StatusCode(stat.Code),
+			Message: stat.Message,
+			ErrorDescription: stat.ErrorDescription,
+		}
+		ResponseStatusCodes = append(ResponseStatusCodes, newStat)
+	}
+}
+
+// Creates and returns pointer to a new instance of HTTP request.
+func newRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
 	httpRequest.initialize()
 	reader := bufio.NewReader(Connection)
@@ -19,8 +41,8 @@ func NewRequest(Connection net.Conn) *HttpRequest {
 	return &httpRequest
 }
 
-// Creates and returns a new instance of HTTP response.
-func NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
+// Creates and returns pointer to a new instance of HTTP response.
+func newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
 	httpResponse.initialize(GetResponseVersion(request.Version))
 	writer := bufio.NewWriter(Connection)
@@ -28,7 +50,15 @@ func NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	return &httpResponse
 }
 
-// Creates and returns a new instance of HTTP web server.
+// Creates and returns pointer to a new instance of Router.
+func newRouter() *Router {
+	router := new(Router)
+	router.Routes = make([]Route, 0)
+	router.RouteTree = createTree()
+	return router
+}
+
+// Returns an instance of HTTP web server.
 func NewServer() (*HttpServer, error) {
 	if SrvLogger == nil {
 		SrvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
@@ -38,28 +68,8 @@ func NewServer() (*HttpServer, error) {
 		var server HttpServer
 		server.HostAddress = "";
 		server.PortNumber = 0
-		ServerConfig, err := config.GetConfig()
-		if err != nil {
-			return nil, err
-		}
-		server.innerRouter = Router{}
-		server.innerRouter.Routes = make([]Route, 0)
-		DateHeaders = make([]string, 0)
-		DateHeaders = append(DateHeaders, ServerConfig.DateHeaders...)
-		AllowedContentTypes = ServerConfig.AllowedContentTypes
-		ServerDefaults = ServerConfig.ServerDefaults
-		Versions = ServerConfig.GetVersionMap()
-		ResponseStatusCodes = make([]respStatus, 0)
-		for _, stat := range ServerConfig.ResponseStatus {
-			newStat := respStatus{
-				Code: StatusCode(stat.Code),
-				Message: stat.Message,
-				ErrorDescription: stat.ErrorDescription,
-			}
-			ResponseStatusCodes = append(ResponseStatusCodes, newStat)
-		}
+		server.innerRouter = newRouter()
 		ServerInstance = &server
-
 		return &server, nil
 	}
 

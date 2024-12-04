@@ -7,7 +7,7 @@ import (
 // Structure to contain the compatibility information for the web server instance. This includes the different versions of HTTP and the corresponding methods supported.
 type HttpVersion struct {
 	// HTTP version number supported by the server.
-	VersionNumber string `json:"versionNumber"`
+	VersionNumber string `json:"versionNumber,omitempty"`
 	// List of HTTP methods allowed for the version number.
 	AllowedMethods []string `json:"allowed_methods"`
 }

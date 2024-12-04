@@ -33,16 +33,14 @@ type Router struct {
 	Routes []Route
 	// Contains the last sequence number generated for a route defined for the router.
 	LastSequenceNumber int
+	// Contains the prefix tree representation of all the routes
+	RouteTree *routeTreeNode
 }
 
 // Validates if a given route path is syntactically correct.
 func (rtr *Router) validateRoute(routePath string) bool {
-	if strings.HasPrefix(routePath, "//") || !strings.HasPrefix(routePath, "/") {
-		return false
-	}
-
-	RouteName := strings.TrimPrefix(routePath, "/")
-	isRouteValid, err := regexp.MatchString(VALIDATE_ROUTE_PATTERN, RouteName)
+	routePath = strings.TrimSpace(routePath)
+	isRouteValid, err := regexp.MatchString("^/[a-zA-z][a-zA-Z0-9_/:-]*[a-zA-Z0-9]$", routePath)
 	if err != nil {
 		return false
 	}
@@ -86,6 +84,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 	}
 	
 	rtr.Routes = append(rtr.Routes, routeObj)
+	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil
 }
 
@@ -111,5 +110,6 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 	}
 	
 	rtr.Routes = append(rtr.Routes, routeObj)
+	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil
 }

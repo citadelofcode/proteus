@@ -150,7 +150,7 @@
         "Message": "Gone", 
         "ErrorDescription": "The resource requested has expired and is no longer relevant."
     }, {
-        "Code": "411",
+        "Code": 411,
         "Message": "Length Required",
         "ErrorDescription": "The request sent does not contain 'Content-Length' value."
     }, {

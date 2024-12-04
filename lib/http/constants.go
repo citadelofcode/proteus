@@ -15,7 +15,6 @@ const (
 	HEADER_LINE_SEPERATOR = "\r\n"
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
-	VALIDATE_ROUTE_PATTERN = "^[a-zA-z][a-zA-Z0-9_/:-]*"
 )
 
 // Global logger instance to log messages generated while HTTP server processes incoming requests.
