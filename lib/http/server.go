@@ -16,7 +16,7 @@ type HttpServer struct {
 	// Server socket created and bound to the port number.
 	Socket net.Listener
 	// Router instance that contains all the routes and their associated handlers.
-	innerRouter Router
+	innerRouter *Router
 }
 
 // Define a static route and map to a static file or folder in the file system.
