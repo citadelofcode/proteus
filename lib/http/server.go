@@ -37,13 +37,13 @@ func (srv *HttpServer) Static(Route string, TargetPath string) {
 // Setup the web server instance to listen for incoming HTTP requests at the given hostname and port number.
 func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	if PortNumber == 0 {
-		srv.PortNumber = GetDefaultPort()
+		srv.PortNumber = getDefaultPort()
 	} else {
 		srv.PortNumber = PortNumber
 	}
 
 	if HostAddress == "" {
-		srv.HostAddress = GetDefaultHostname()
+		srv.HostAddress = getServerDefaults("hostname")
 	} else {
 		srv.HostAddress = strings.TrimSpace(HostAddress)
 	}
@@ -76,12 +76,17 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	httpRequest.read()
 	httpResponse := newResponse(ClientConnection, httpRequest)
 
-	if !IsMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
+	if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
 		httpResponse.Status(StatusMethodNotAllowed)
 		ErrorHandler(httpRequest, httpResponse)
 	} else {
-		// srv.innerRouter.processRequest(httpRequest, httpResponse)
-		fmt.Println("Coming soon - A process request function that will process the incoming request.")
+		routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
+		if err != nil {
+			httpResponse.Status(StatusNotFound)
+			ErrorHandler(httpRequest, httpResponse)
+		} else {
+			routeHandler(httpRequest, httpResponse)
+		}
 	}
 }
 

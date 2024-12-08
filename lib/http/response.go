@@ -12,6 +12,16 @@ import (
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
+// Structure to represent a response status code and its associated information.
+type respStatus struct {
+	// HTTP response status code.
+	Code StatusCode
+	// Short message for the corresponding status code.
+	Message string
+	// Error description for error status codes (>=400).
+	ErrorDescription string
+}
+
 // Structure to represent a HTTP response sent back by the server to the client.
 type HttpResponse struct {
 	// Status code of the response being sent back to the client like 200, 203, 404 etc.
@@ -34,7 +44,7 @@ func (res *HttpResponse) initialize(version string) {
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
-	res.Version = GetHighestVersion()
+	res.Version = getHighestVersion()
 }
 
 // // Assigns the stream writer field of HttpResponse with a valid response stream.
@@ -49,7 +59,7 @@ func (res *HttpResponse) addGeneralHeaders() {
 
 // Adds all the default response HTTP headers to the HttpResponse instance.
 func (res *HttpResponse) addResponseHeaders() {
-	res.Headers.Add("Server", GetServerDefaultsValue("server_name"))
+	res.Headers.Add("Server", getServerDefaults("server_name"))
 }
 
 // Writes bytes of data to response byte stream from the HttpResponse instance.
@@ -169,7 +179,7 @@ func (res *HttpResponse) Status(status StatusCode) {
 
 // Send the given file from the local file system as the HTTP response.
 func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) {
-	fileMediaType, exists := GetContentType(CompleteFilePath)
+	fileMediaType, exists := getContentType(CompleteFilePath)
 	if exists {
 		file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
 		if err == nil {

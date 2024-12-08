@@ -26,12 +26,13 @@ func createTree() *routeTreeNode {
 	return newRouteTreeNode("")
 }
 
-// Normalizes the given route path into a slice of route parts present in the path. This function also removes any leading or trailing space and '/' before getting the route parts.
+// Normalizes the given route path into a slice of route parts present in the path. 
+// This function also removes any leading or trailing space and '/' before getting the route parts.
 func normalizeRoute(RoutePath string) []string {
 	RoutePath = strings.TrimSpace(RoutePath)
 	RoutePath = strings.ToLower(RoutePath)
-	RoutePath = strings.TrimSuffix(RoutePath, "/")
-	RoutePath = strings.TrimPrefix(RoutePath, "/")
+	RoutePath = strings.TrimRight(RoutePath, "/")
+	RoutePath = strings.TrimLeft(RoutePath, "/")
 	RouteParts := strings.Split(RoutePath, "/")
 	NormalizedParts := make([]string, 0)
 	for _, routePart := range RouteParts {
@@ -48,6 +49,50 @@ func normalizeRoute(RoutePath string) []string {
 func addRouteToTree(RouteTree *routeTreeNode, RoutePath string) {
 	RouteParts := normalizeRoute(RoutePath)
 	RouteTree.insert(RouteParts)
+}
+
+// Match the given route path with the route tree and fetch all the path parameters. 
+// This function returns the pointer to a matchRouteInfo object which contains the original route in the router and the list of all path parameter(s).
+func matchRouteInTree(root *routeTreeNode, RoutePath string) *matchRouteInfo {
+	routeInfo := new(matchRouteInfo)
+	routeInfo.Segments = make(Params)
+	origRouteParts := normalizeRoute(RoutePath)
+	finalRouteParts := make([]string, 0)
+	for next := root; next != nil; {
+		if len(next.Children) > 0 {
+			isFound := false
+			for _, chd := range next.Children {
+				if strings.EqualFold(origRouteParts[0], chd.RoutePart) {
+					finalRouteParts = append(finalRouteParts, origRouteParts[0])
+					if len(origRouteParts) > 1 {
+						origRouteParts = origRouteParts[1:]
+						next = chd
+						isFound = true
+					}
+					break
+				} else if strings.HasPrefix(chd.RoutePart, ":") {
+					paramName, _ := strings.CutPrefix(chd.RoutePart, ":")
+					routeInfo.Segments.Add(paramName, []string { origRouteParts[0] })
+					finalRouteParts = append(finalRouteParts, chd.RoutePart)
+					if len(origRouteParts) > 1 {
+						origRouteParts = origRouteParts[1:]
+						next = chd
+						isFound = true
+					}
+					break
+				}
+			}
+
+			if !isFound {
+				break
+			}
+		} else {
+			break
+		}
+	}	
+
+	routeInfo.RoutePath = strings.Join(finalRouteParts, "/")
+	return routeInfo
 }
 
 // Recursively adds the route parts to the route tree by creating nodes in the tree for individual route parts.

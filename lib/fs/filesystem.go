@@ -2,7 +2,7 @@ package fs
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -36,7 +36,10 @@ type File struct {
 func GetPathType(TargetPath string) (string, error) {
 	fileStat, err := os.Stat(TargetPath)
 	if err != nil {
-		return "", err
+		fsfErr := new(FileSystemError)
+		fsfErr.TargetPath = TargetPath
+		fsfErr.Message = fmt.Sprintf("Error occurred while fetching file stats: %s", err.Error())
+		return "", fsfErr
 	}
 	fileMode := fileStat.Mode()
 	if fileMode.IsDir() {
@@ -44,7 +47,10 @@ func GetPathType(TargetPath string) (string, error) {
 	} else if fileMode.IsRegular() {
 		return FILE_TYPE_PATH, nil
 	} else {
-		return "", errors.New("given path is neither a file nor a folder")
+		nfErr := new(FileSystemError)
+		nfErr.TargetPath = TargetPath
+		nfErr.Message = "Given path points neither to a file nor to a folder"
+		return "", nfErr
 	}
 }
 
@@ -53,7 +59,10 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
 	if err != nil {
-		return nil, err
+		fsfErr := new(FileSystemError)
+		fsfErr.TargetPath = CompleteFilePath
+		fsfErr.Message = fmt.Sprintf("Error occurred while opening file: %s", err.Error())
+		return nil, fsfErr
 	}
 	defer fileHandler.Close()
 	reader := bufio.NewReader(fileHandler)
@@ -77,12 +86,16 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	return fileContents, nil
 }
 
-// Returns pointer to a FILE object that contains metadata for file available at the given path. The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
+// Returns pointer to a FILE object that contains metadata for file available at the given path. 
+// The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
 func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*File, error) {
 	var file File
 	fileStat, err := os.Stat(CompleteFilePath)
 	if err != nil {
-		return nil, err
+		fsfErr := new(FileSystemError)
+		fsfErr.TargetPath = CompleteFilePath
+		fsfErr.Message = fmt.Sprintf("Error occurred while fetching file stats: %s", err.Error())
+		return nil, fsfErr
 	}
 	Mode := fileStat.Mode()
 	if Mode.IsRegular() {
@@ -101,6 +114,9 @@ func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*F
 		file.Size = fileStat.Size()
 		return &file, nil
 	} else {
-		return nil, errors.New("given path is not a file")
+		fsfErr := new(FileSystemError)
+		fsfErr.TargetPath = CompleteFilePath
+		fsfErr.Message = "Given path does not point to a file"
+		return nil, fsfErr
 	}
 }

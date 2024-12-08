@@ -27,6 +27,14 @@ type Route struct {
 	RoutePath string
 }
 
+// Represents the data returned when a HTTP request route is matched to the routes configured in the router.
+type matchRouteInfo struct {
+	// List of all path parameter(s) present in the route path
+	Segments Params
+	// The complete route path matched.
+	RoutePath string
+}
+
 // Structure to hold all the routes and the associated routing logic.
 type Router struct {
 	// Collection of all routes defined in the router.
@@ -112,4 +120,28 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 	rtr.Routes = append(rtr.Routes, routeObj)
 	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil
+}
+
+func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
+	routePath := request.ResourcePath
+	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
+	if routeInfo.RoutePath == "" {
+		return nil, errors.New("route match not found")
+	}
+
+	if len(routeInfo.Segments) > 0 {
+		for key, values := range routeInfo.Segments {
+			request.Segments.Add(key, values)
+		}
+	}
+
+	var handler Handler
+	for _, route := range rtr.Routes {
+		if strings.EqualFold(routeInfo.RoutePath, route.RoutePath) {
+			handler = route.RouteHandler
+			break
+		}
+	}
+
+	return handler, nil
 }
