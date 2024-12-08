@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -42,7 +41,7 @@ type HttpRequest struct {
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
-	req.Version = GetHighestVersion()
+	req.Version = getHighestVersion()
 	req.staticFilePath = ""
 	req.Query = nil
 	req.Segments = nil
@@ -94,7 +93,12 @@ func (req *HttpRequest) readHeader() error {
 			if err == io.EOF {
 				break
 			}
-			return err
+			
+			reqError := new(RequestParseError)
+			reqError.Section = "Header"
+			reqError.Message = err.Error()
+			reqError.Value = strings.TrimSpace(message)
+			return reqError
 		}
 
 		message = strings.TrimSuffix(message, HEADER_LINE_SEPERATOR)
@@ -104,22 +108,33 @@ func (req *HttpRequest) readHeader() error {
 		} else if !RequestLineProcessed {
 			RequestLineParts := strings.Split(message, REQUEST_LINE_SEPERATOR)
 			if len(RequestLineParts) != 3 {
-				return errors.New("request line should contain exactly three values seperated by a single whitespace")
+				reqError := new(RequestParseError)
+				reqError.Section = "Header"
+				reqError.Message = "Request line should contain exactly three values seperated by a single whitespace"
+				reqError.Value = strings.TrimSpace(message)
+				return reqError
 			}
 			req.Method = strings.TrimSpace(RequestLineParts[0])
 			req.ResourcePath = strings.TrimSpace(RequestLineParts[1])
 			tempVersion := strings.TrimSpace(RequestLineParts[2])
 			tempVersion, found := strings.CutPrefix(tempVersion, "HTTP/")
 			if !found {
-				return errors.New("invalid value for HTTP Version in request line")
+				reqError := new(RequestParseError)
+				reqError.Section = "Header"
+				reqError.Value = strings.TrimSpace(tempVersion)
+				reqError.Message = "Invalid HTTP Version found in header"
+				return reqError
 			}
 			req.Version = strings.TrimSpace(tempVersion) 
 			RequestLineProcessed = true
 		} else {
 			HeaderKey, HeaderValue, found := strings.Cut(message, HEADER_KEY_VALUE_SEPERATOR)
 			if !found {
-				errorString := fmt.Sprintf("error while processing header: %s :: Semicolon is missing", message)
-				return errors.New(errorString)
+				reqError := new(RequestParseError)
+				reqError.Section = "Header"
+				reqError.Value = strings.TrimSpace(message)
+				reqError.Message = "Invalid header string found among request headers"
+				return reqError
 			}
 
 			HeaderKey = strings.TrimSpace(HeaderKey)
@@ -138,7 +153,11 @@ func (req *HttpRequest) readBody() error {
 		for index := 0; index < req.ContentLength; index++ {
 			bodyByte, err := req.reader.ReadByte()
 			if err != nil {
-				return errors.New("unexpected error occurred. Unable to read request body")
+				reqError := new(RequestParseError)
+				reqError.Section = "Body"
+				reqError.Value = "Request Body"
+				reqError.Message = err.Error()
+				return reqError
 			}
 			req.Body[index] = bodyByte
 		}
@@ -152,7 +171,11 @@ func (req *HttpRequest) parseQueryParams() error {
 	req.Query = make(Params)
 	parsedUrl, err := url.Parse(req.ResourcePath)
 	if err != nil {
-		return err
+		reqError := new(RequestParseError)
+		reqError.Section = "QueryParams"
+		reqError.Value = req.ResourcePath
+		reqError.Message = err.Error()
+		return reqError
 	}
 
 	queryParams := parsedUrl.Query()
@@ -169,7 +192,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
 		return false
 	}
 
-	fileMediaType, exists := GetContentType(CompleteFilePath)
+	fileMediaType, exists := getContentType(CompleteFilePath)
 	if !exists {
 		return false
 	}
