@@ -8,12 +8,7 @@ import (
 )
 
 func main() {
-	server, err := http.NewServer()
-	if err != nil {
-		fmt.Printf("Error occurred while creating web server: %s", err.Error())
-		os.Exit(1)
-	}
-
+	server := http.NewServer()
 	CurrentDirectory, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error occurred while getting current working directory: " + err.Error())

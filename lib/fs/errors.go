@@ -14,5 +14,5 @@ type FileSystemError struct {
 
 // Returns a customized error message associated with the instance of FileSystemError.
 func (fsf *FileSystemError) Error() string {
-	return fmt.Sprintf("Error occurred for file [%s] :: %s", fsf.TargetPath, fsf.Message)
+	return fmt.Sprintf("File System Error for [%s] :: %s", fsf.TargetPath, fsf.Message)
 }

@@ -18,3 +18,16 @@ type RequestParseError struct {
 func (rpe *RequestParseError) Error() string {
 	return fmt.Sprintf("Error while parsing request :: Section: (%s) :: Value: (%s) :: %s", rpe.Section, rpe.Value, rpe.Message)
 }
+
+// Custom error to track errors raised by the router associated with the web server.
+type RoutingError struct {
+	// The target route path which has caused the issue.
+	RoutePath string
+	// The actual error message raised
+	Message string
+}
+
+// Returns the error message associated with the RoutingError instance.
+func (re *RoutingError) Error() string {
+	return fmt.Sprintf("Routing Error :: Route - [%s] :: %s", re.RoutePath, re.Message)
+}
