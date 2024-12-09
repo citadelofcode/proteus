@@ -146,7 +146,7 @@ func getRfc1123Time() string {
 }
 
 // Returns an instance of HTTP web server.
-func NewServer() (*HttpServer, error) {
+func NewServer() *HttpServer {
 	if SrvLogger == nil {
 		SrvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
 	}
@@ -157,8 +157,8 @@ func NewServer() (*HttpServer, error) {
 		server.PortNumber = 0
 		server.innerRouter = newRouter()
 		ServerInstance = &server
-		return &server, nil
+		return &server
 	}
 
-	return ServerInstance, nil
+	return ServerInstance
 }

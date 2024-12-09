@@ -1,10 +1,9 @@
 package http
 
 import (
-	"errors"
 	"path/filepath"
-	"strings"
 	"regexp"
+	"strings"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
@@ -68,18 +67,27 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 	Method = strings.ToUpper(Method)
 	isRouteValid := rtr.validateRoute(RoutePath)
 	if !isRouteValid {
-		return errors.New("route contains one or more invalid characters")
+		reError := new(RoutingError)
+		reError.RoutePath = RoutePath
+		reError.Message = "addStaticRoute: Route contains one or more invalid characters"
+		return reError
 	}
 	isAbsolutePath := filepath.IsAbs(TargetPath)
 	if !isAbsolutePath {
-		return errors.New("parameter 'TargetPath' must be an absolute path")
+		reError := new(RoutingError)
+		reError.RoutePath = TargetPath
+		reError.Message = "addStaticRoute: Given target folder path is not an absolute path"
+		return reError
 	}
 	PathType, err := fs.GetPathType(TargetPath)
 	if err != nil {
-		return errors.New("error occurred while determining target path type: " + err.Error())
+		return err
 	}
 	if PathType == fs.FILE_TYPE_PATH {
-		return errors.New("target path should be a directory")
+		reError := new(RoutingError)
+		reError.RoutePath = TargetPath
+		reError.Message = "Target path given should point to a directory not a file"
+		return reError
 	}
 	rtr.LastSequenceNumber++
 	routeObj := Route{
@@ -104,7 +112,10 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 
 	isRouteValid := rtr.validateRoute(RoutePath)
 	if !isRouteValid {
-		return errors.New("route path contains one or more invalid characters")
+		reError := new(RoutingError)
+		reError.RoutePath = RoutePath
+		reError.Message = "addDynamicRoute: Route contains one or more invalid characters"
+		return reError
 	}
 
 	rtr.LastSequenceNumber++
@@ -126,7 +137,10 @@ func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 	routePath := request.ResourcePath
 	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
 	if routeInfo.RoutePath == "" {
-		return nil, errors.New("route match not found")
+		reError := new(RoutingError)
+		reError.RoutePath = routePath
+		reError.Message = "matchRoute: A match was not found in the router route tree"
+		return nil, reError
 	}
 
 	if len(routeInfo.Segments) > 0 {

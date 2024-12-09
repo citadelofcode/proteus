@@ -38,7 +38,7 @@ func GetPathType(TargetPath string) (string, error) {
 	if err != nil {
 		fsfErr := new(FileSystemError)
 		fsfErr.TargetPath = TargetPath
-		fsfErr.Message = fmt.Sprintf("Error occurred while fetching file stats: %s", err.Error())
+		fsfErr.Message = fmt.Sprintf("GetPathType: Error occurred while fetching file stats: %s", err.Error())
 		return "", fsfErr
 	}
 	fileMode := fileStat.Mode()
