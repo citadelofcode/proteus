@@ -107,16 +107,20 @@ func (req *HttpRequest) readHeader() error {
 			break
 		} else if !RequestLineProcessed {
 			RequestLineParts := strings.Split(message, REQUEST_LINE_SEPERATOR)
-			if len(RequestLineParts) != 3 {
+			if len(RequestLineParts) < 2 {
 				reqError := new(RequestParseError)
 				reqError.Section = "Header"
-				reqError.Message = "Request line should contain exactly three values seperated by a single whitespace"
+				reqError.Message = "Request line should contain atleast 2 values seperated by a single whitespace"
 				reqError.Value = strings.TrimSpace(message)
 				return reqError
 			}
 			req.Method = strings.TrimSpace(RequestLineParts[0])
 			req.ResourcePath = strings.TrimSpace(RequestLineParts[1])
 			tempVersion := strings.TrimSpace(RequestLineParts[2])
+			if tempVersion == "" {
+				// If the incoming request doesn't have a version mentioned, then consider it as a HTTP/0.9 request.
+				tempVersion = "HTTP/0.9"
+			}
 			tempVersion, found := strings.CutPrefix(tempVersion, "HTTP/")
 			if !found {
 				reqError := new(RequestParseError)
