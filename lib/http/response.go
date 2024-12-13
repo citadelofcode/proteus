@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"net/textproto"
 	"slices"
@@ -40,11 +39,15 @@ type HttpResponse struct {
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
 func (res *HttpResponse) initialize(version string) {
-	res.Version = strings.TrimSpace(version)
+	version = strings.TrimSpace(version)
+	if version == "" {
+		res.Version = "0.9"
+	} else {
+		res.Version = version
+	}
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
-	res.Version = getHighestVersion()
 }
 
 // // Assigns the stream writer field of HttpResponse with a valid response stream.
@@ -54,58 +57,85 @@ func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 
 // Adds all the general HTTP headers to the HttpResponse instance.
 func (res *HttpResponse) addGeneralHeaders() {
-	res.Headers.Add("Date", getRfc1123Time())
+	if !strings.EqualFold(res.Version, "0.9") {
+		res.Headers.Add("Date", getRfc1123Time())
+	}
 }
 
 // Adds all the default response HTTP headers to the HttpResponse instance.
 func (res *HttpResponse) addResponseHeaders() {
-	res.Headers.Add("Server", getServerDefaults("server_name"))
+	if !strings.EqualFold(res.Version, "0.9") {
+		res.Headers.Add("Server", getServerDefaults("server_name"))
+	}
 }
 
 // Writes bytes of data to response byte stream from the HttpResponse instance.
-func (res *HttpResponse) write() {
-	err := res.writeStatusLine()
-	if err != nil {
-		LogError(err.Error())
-		return
+func (res *HttpResponse) write() error {
+	if res.writer == nil {
+		resErr := new(ResponseError)
+		resErr.Section = "RespWrite"
+		resErr.Value = ""
+		resErr.Message = "Writer object not initialized"
+		return resErr
 	}
 
-	err = res.writeHeaders()
-	if err != nil {
-		LogError(err.Error())
-		return
+	var err error
+	if !strings.EqualFold(res.Version, "0.9") {
+		err = res.writeStatusLine()
+		if err != nil {
+			return err
+		}
+	}
+
+	if !strings.EqualFold(res.Version, "0.9") {
+		err = res.writeHeaders()
+		if err != nil {
+			return err
+		}
 	}
 
 	err = res.writeBody()
 	if err != nil {
-		LogError(err.Error())
-		return
+		return err
 	}
 
 	err = res.writer.Flush()
 	if err != nil {
-		LogError(err.Error())
-		return
+		resErr := new(ResponseError)
+		resErr.Section = "RespWrite"
+		resErr.Value = ""
+		resErr.Message = "Writer object could not be flushed"
+		return resErr
 	}
+
+	return nil
 }
 
 // Writes the HTTP response status line to the response byte stream.
 func (res *HttpResponse) writeStatusLine() error {
-	if res.writer == nil {
-		return errors.New("error occurred while writing response status line: writer object not initialized")
-	}
-
 	if res.StatusCode == 0 {
-		return errors.New("error occurred while writing response status line: status code cannot be zero")
+		resErr := new(ResponseError)
+		resErr.Section = "StatusLine"
+		resErr.Value = ""
+		resErr.Message = "Status code for the response cannot be zero"
+		return resErr
 	}
 
 	if res.Version == "" {
-		return errors.New("error occurred while writing response status line: Protocol version not set")
+		resErr := new(ResponseError)
+		resErr.Section = "StatusLine"
+		resErr.Value = ""
+		resErr.Message = "Response version cannot be empty"
+		return resErr
 	}
 
 	_, err := res.writer.WriteString(fmt.Sprintf("HTTP/%s %d %s%s", res.Version, res.StatusCode, res.StatusMessage, HEADER_LINE_SEPERATOR))
 	if err != nil {
-		return errors.New("error occurred while writing response status line: " + err.Error())
+		resErr := new(ResponseError)
+		resErr.Section = "StatusLine"
+		resErr.Value = ""
+		resErr.Message = fmt.Sprintf("Error while writing response status line :: %s", err.Error())
+		return resErr
 	}
 
 	return nil
@@ -113,28 +143,32 @@ func (res *HttpResponse) writeStatusLine() error {
 
 // Writes the HTTP response headers to the response byte stream.
 func (res *HttpResponse) writeHeaders() error {
-	if res.writer == nil {
-		return errors.New("error occurred while writing response headers: writer object not initialized")
-	}
-
 	for key, values := range res.Headers {
 		value := strings.Join(values, ",")
 		_, err := res.writer.WriteString(fmt.Sprintf("%s: %s%s", key, value, HEADER_LINE_SEPERATOR))
 		if err != nil {
-			return errors.New("error occurred while writing response headers: " + err.Error())
+			resErr := new(ResponseError)
+			resErr.Section = "Header"
+			resErr.Value = fmt.Sprintf("%s: %s", key, value)
+			resErr.Message = fmt.Sprintf("Error while writing response header :: %s", err.Error())
+			return resErr
 		}
 	}
-	res.writer.WriteString(HEADER_LINE_SEPERATOR)
+
+	_, err := res.writer.WriteString(HEADER_LINE_SEPERATOR)
+	if err != nil {
+		resErr := new(ResponseError)
+		resErr.Section = "Header"
+		resErr.Value = HEADER_LINE_SEPERATOR
+		resErr.Message = fmt.Sprintf("Error while writing response header :: %s", err.Error())
+		return resErr
+	}
 
 	return nil
 }
 
 // Writes the response body to the response byte stream.
 func (res *HttpResponse) writeBody() error {
-	if res.writer == nil {
-		return errors.New("error occurred while writing response body: writer object not initialized")
-	}
-
 	if len(res.Body) > 0 {
 		ContentType, exists := res.Headers.Get("Content-Type")
 		if exists {
@@ -143,13 +177,30 @@ func (res *HttpResponse) writeBody() error {
 			if strings.HasPrefix(ContentType, "text") {
 				_, err := res.writer.WriteString(string(res.Body))
 				if err != nil {
-					return errors.New("error occurred while writing response body: " + err.Error())
+					resErr := new(ResponseError)
+					resErr.Section = "Body"
+					resErr.Value = ContentType
+					resErr.Message = fmt.Sprintf("Error while writing response body :: %s", err.Error())
+					return resErr
 				}
 			} else {
 				_, err := res.writer.Write(res.Body)
 				if err != nil {
-					return errors.New("error occurred while writing response body: " + err.Error())
+					resErr := new(ResponseError)
+					resErr.Section = "Body"
+					resErr.Value = ContentType
+					resErr.Message = fmt.Sprintf("Error while writing response body :: %s", err.Error())
+					return resErr
 				}
+			}
+		} else {
+			_, err := res.writer.Write(res.Body)
+			if err != nil {
+				resErr := new(ResponseError)
+				resErr.Section = "Body"
+				resErr.Value = "Content type Not Available"
+				resErr.Message = fmt.Sprintf("Error while writing response body :: %s", err.Error())
+				return resErr
 			}
 		}
 	}
@@ -158,17 +209,23 @@ func (res *HttpResponse) writeBody() error {
 }
 
 // Adds a new key-value pair to the request headers collection.
-func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) {
+func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) error {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
-		_, err := time.Parse(time.RFC1123, HeaderValue)
-		_, errOne := time.Parse(time.ANSIC, HeaderValue)
-
-		if err == nil || errOne == nil {
+		isValid, _ := isHttpDate(HeaderValue)
+		if isValid {
 			res.Headers.Add(HeaderKey, HeaderValue)
+		} else {
+			resErr := new(ResponseError)
+			resErr.Section = "Header"
+			resErr.Value = fmt.Sprintf("%s: %s", HeaderKey, HeaderValue)
+			resErr.Message = "Date string must conform to one of these formats - RFC1123 or ANSIC"
+			return resErr
 		}
 	} else {
 		res.Headers.Add(HeaderKey, HeaderValue)
 	}
+
+	return nil
 }
 
 // Sets the status of the HTTP response instance.
@@ -178,28 +235,38 @@ func (res *HttpResponse) Status(status StatusCode) {
 }
 
 // Send the given file from the local file system as the HTTP response.
-func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) {
+func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) error {
 	fileMediaType, exists := getContentType(CompleteFilePath)
 	if exists {
 		file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
 		if err == nil {
-			res.AddHeader("Content-Type", fileMediaType)
-			res.AddHeader("Content-Length", strconv.FormatInt(file.Size, 10))
-			res.AddHeader("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
+			res.Headers.Add("Content-Type", fileMediaType)
+			res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
+			res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
 			if !OnlyMetadata {
 				res.Body = file.Contents
 			}
 			
-			res.write()
+			err := res.write()
+			if err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 // Sends a the given error content as response back to the client.
-func (res *HttpResponse) SendError(Content string) {
+func (res *HttpResponse) SendError(Content string) error {
 	responseContent := []byte(Content)
-	res.AddHeader("Content-Type", ERROR_MSG_CONTENT_TYPE)
-	res.AddHeader("Content-Length", strconv.Itoa(len(responseContent)))
+	res.Headers.Add("Content-Type", ERROR_MSG_CONTENT_TYPE)
+	res.Headers.Add("Content-Length", strconv.Itoa(len(responseContent)))
 	res.Body = responseContent
-	res.write()
+	err := res.write()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

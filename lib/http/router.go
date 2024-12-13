@@ -133,6 +133,7 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 	return nil
 }
 
+// Function that matches a given route with the route tree and fetches the matched route, uses this route to get the corresponding handler (static or dynamic).
 func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 	routePath := request.ResourcePath
 	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
@@ -143,7 +144,7 @@ func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 		return nil, reError
 	}
 
-	if len(routeInfo.Segments) > 0 {
+	if routeInfo.Segments.Length() > 0 {
 		for key, values := range routeInfo.Segments {
 			request.Segments.Add(key, values)
 		}

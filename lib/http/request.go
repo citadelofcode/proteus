@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net/textproto"
+	"net/url"
+	"slices"
 	"strconv"
 	"strings"
-	"time"
-	"net/textproto"
-	"slices"
-	"net/url"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
@@ -19,7 +18,7 @@ type HttpRequest struct {
 	Method string
 	// Resource path requested by the client.
 	ResourcePath string
-	// HTTP version that the request complies with.
+	// HTTP version that the request complies with. It is of format <major>.<minor> which refers to the major and minor versions respectively.
 	Version string
 	// Collection of all the request headers received.
 	Headers Headers
@@ -53,33 +52,31 @@ func (req *HttpRequest) setReader(reader *bufio.Reader) {
 }
 
 // Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.
-func (req *HttpRequest) read() {
+func (req *HttpRequest) read() error {
 	err := req.readHeader()
 	if err != nil {
-		LogError(fmt.Sprintf("Error while reading request headers: %s\n", err.Error()))
-		return
+		return err
 	}
 
 	err = req.parseQueryParams()
 	if err != nil {
-		LogError(fmt.Sprintf("Error while parsing query parameters: %s\n", err.Error()))
-		return
+		return err
 	}
 
 	clength, ok := req.Headers.Get("Content-Length")
 	if ok {
 		req.ContentLength, err = strconv.Atoi(clength)
 		if err != nil {
-			LogError(fmt.Sprintf("Error while reading value of Content-Length: %s\n", err.Error()))
-			return
+			return err
 		}
 
 		err = req.readBody()
 		if err != nil {
-			LogError(fmt.Sprintf("Error while reading request body: %s\n", err.Error()))
-			return
+			return err
 		}
 	}
+
+	return nil
 }
 
 // Reads the values for all request headers and stores them in the HttpRequest instance.
@@ -90,15 +87,15 @@ func (req *HttpRequest) readHeader() error {
 	for {
 		message, err := req.reader.ReadString('\n')
 		if err != nil {
-			if err == io.EOF {
+			if len(message) == 0 && err != io.EOF {
+				reqError := new(RequestParseError)
+				reqError.Section = "Header"
+				reqError.Message = err.Error()
+				reqError.Value = strings.TrimSpace(message)
+				return reqError
+			} else if len(message) == 0 && err == io.EOF {
 				break
-			}
-			
-			reqError := new(RequestParseError)
-			reqError.Section = "Header"
-			reqError.Message = err.Error()
-			reqError.Value = strings.TrimSpace(message)
-			return reqError
+			}			
 		}
 
 		message = strings.TrimSuffix(message, HEADER_LINE_SEPERATOR)
@@ -107,16 +104,28 @@ func (req *HttpRequest) readHeader() error {
 			break
 		} else if !RequestLineProcessed {
 			RequestLineParts := strings.Split(message, REQUEST_LINE_SEPERATOR)
-			if len(RequestLineParts) != 3 {
+			if len(RequestLineParts) != 2 && len(RequestLineParts) != 3 {
 				reqError := new(RequestParseError)
 				reqError.Section = "Header"
-				reqError.Message = "Request line should contain exactly three values seperated by a single whitespace"
+				reqError.Message = "Request line should contain either 2 or 3 values, seperated by a single whitespace"
 				reqError.Value = strings.TrimSpace(message)
 				return reqError
 			}
-			req.Method = strings.TrimSpace(RequestLineParts[0])
-			req.ResourcePath = strings.TrimSpace(RequestLineParts[1])
-			tempVersion := strings.TrimSpace(RequestLineParts[2])
+
+			tempVersion := ""
+			if len(RequestLineParts) == 2 || len(RequestLineParts) == 3 {
+				req.Method = strings.TrimSpace(RequestLineParts[0])
+				req.ResourcePath = strings.TrimSpace(RequestLineParts[1])
+			}
+
+			if len(RequestLineParts) == 2 {
+				tempVersion = "HTTP/0.9"
+			}
+			
+			if len(RequestLineParts) == 3 {
+				tempVersion = strings.TrimSpace(RequestLineParts[2])
+			}
+
 			tempVersion, found := strings.CutPrefix(tempVersion, "HTTP/")
 			if !found {
 				reqError := new(RequestParseError)
@@ -139,7 +148,10 @@ func (req *HttpRequest) readHeader() error {
 
 			HeaderKey = strings.TrimSpace(HeaderKey)
 			HeaderValue = strings.TrimSpace(HeaderValue)
-			req.AddHeader(HeaderKey, HeaderValue)
+			err := req.addHeader(HeaderKey, HeaderValue)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -166,7 +178,8 @@ func (req *HttpRequest) readBody() error {
 	return nil
 }
 
-// Parses all the query paramaters from the request URL and stores in the HttpRequest instance.
+// Parses all the query paramaters from the request URL and stores in the HttpRequest instance. 
+// Once the parsing is done, it removes the query parameters string from the Resource Path field.
 func (req *HttpRequest) parseQueryParams() error {
 	req.Query = make(Params)
 	parsedUrl, err := url.Parse(req.ResourcePath)
@@ -183,53 +196,67 @@ func (req *HttpRequest) parseQueryParams() error {
 		req.Query.Add(paramName, paramValues)
 	}
 
+	if len(req.Query) > 0 {
+		req.ResourcePath, _, _ = strings.Cut(req.ResourcePath, "?")
+	}
+
 	return nil
 }
 
 // Checks if the given HTTP GET request made is a CONDITIONAL GET request.
-func (req *HttpRequest) isConditionalGet(CompleteFilePath string) bool {
+func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) {
 	if !strings.EqualFold(req.Method, "GET") {
-		return false
+		return false, nil
 	}
 
 	fileMediaType, exists := getContentType(CompleteFilePath)
 	if !exists {
-		return false
+		return false, nil
 	}
 
 	file, err := fs.GetFile(CompleteFilePath, fileMediaType, true)
 	if err != nil {
-		return false
+		return false, err
 	}
 
 	LastModifiedString, ok := req.Headers.Get("If-Modified-Since")
 	if !ok {
-		return false
+		return false, nil
 	}
+
 	LastModifiedString = strings.TrimSpace(LastModifiedString)
-	LastModifiedSince, err := time.Parse(time.RFC1123, LastModifiedString)
-	if err != nil {
-		LastModifiedSince, err = time.Parse(time.ANSIC, LastModifiedString)
-		if err != nil {
-			return false
-		}
+	isValid, LastModifiedSince := isHttpDate(LastModifiedString)
+	if !isValid {
+		reqError := new(RequestParseError)
+		reqError.Section = "Header"
+		reqError.Value = LastModifiedString
+		reqError.Message = "The given datetime string value must either conform to ANSIC or RFC 1123 format"
+		return false, reqError
 	}
+	
 	if file.LastModifiedAt.After(LastModifiedSince) {
-		return false
+		return false, nil
 	}
-	return true
+
+	return true, nil
 }
 
 // Adds a new key-value pair to the request headers collection.
-func (req *HttpRequest) AddHeader(HeaderKey string, HeaderValue string) {
+func (req *HttpRequest) addHeader(HeaderKey string, HeaderValue string) error {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
-		_, err := time.Parse(time.RFC1123, HeaderValue)
-		_, errOne := time.Parse(time.ANSIC, HeaderValue)
-
-		if err == nil || errOne == nil {
+		isValid, _ := isHttpDate(HeaderValue)
+		if isValid {
 			req.Headers.Add(HeaderKey, HeaderValue)
+		} else {
+			reqError := new(RequestParseError)
+			reqError.Section = "Header"
+			reqError.Value = fmt.Sprintf("%s: %s", HeaderKey, HeaderValue)
+			reqError.Message = "The given date header value should be one of either of these formats - RFC 1123 or ANSIC"
+			return reqError
 		}
 	} else {
 		req.Headers.Add(HeaderKey, HeaderValue)
 	}
+
+	return nil
 }

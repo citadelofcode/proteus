@@ -1,6 +1,10 @@
 {
     "versions": [
         {
+            "versionNumber": "0.9",
+            "allowed_methods": ["GET"]
+        },
+        {
             "versionNumber": "1.0",
             "allowed_methods": ["GET", "HEAD", "POST"]
         }

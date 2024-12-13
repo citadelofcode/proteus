@@ -8,21 +8,40 @@ import (
 var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
 	targetFilePath := request.staticFilePath
 	targetFilePath = strings.TrimSpace(targetFilePath)
-	if !request.isConditionalGet(targetFilePath) {
+	isCondGet, err := request.isConditionalGet(targetFilePath)
+	if err != nil {
+		LogError(err.Error())
+		response.Status(StatusInternalServerError)
+		err = response.SendError(StatusInternalServerError.GetErrorContent())
+		if err != nil {
+			LogError(err.Error())
+		}
+		return
+	}
+
+	var errSend error
+	if isCondGet {
 		response.Status(StatusOK)
-		response.SendFile(targetFilePath, false)
+		errSend = response.SendFile(targetFilePath, false)
 	} else {
 		response.Status(StatusNotModified)
-		response.SendFile(targetFilePath, true)
+		errSend = response.SendFile(targetFilePath, true)
+	}
+
+	if errSend != nil {
+		LogError(errSend.Error())
 	}
 }
 
 // Default error handler logic to be implemented for sending an error response back to client.
 var ErrorHandler = func (request *HttpRequest, response *HttpResponse) {
 	if response.StatusCode == int(StatusMethodNotAllowed) {
-		response.AddHeader("Allow", getAllowedMethods(response.Version))
+		response.Headers.Add("Allow", getAllowedMethods(response.Version))
 	} 
 
 	statusCode := StatusCode(response.StatusCode)
-	response.SendError(statusCode.GetErrorContent())
+	err := response.SendError(statusCode.GetErrorContent())
+	if err != nil {
+		LogError(err.Error())
+	}
 }

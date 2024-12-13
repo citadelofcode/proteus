@@ -21,3 +21,8 @@ func (pr Params) Add(key string, paramValues []string) {
 	values = append(values, paramValues...)
 	pr[key] = values
 }
+
+// Returns the number of parameters in the collection.
+func (pr Params) Length() int {
+	return len(pr)
+}

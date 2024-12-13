@@ -61,7 +61,7 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	if err != nil {
 		fsfErr := new(FileSystemError)
 		fsfErr.TargetPath = CompleteFilePath
-		fsfErr.Message = fmt.Sprintf("Error occurred while opening file: %s", err.Error())
+		fsfErr.Message = fmt.Sprintf("Error occurred while reading file contents: %s", err.Error())
 		return nil, fsfErr
 	}
 	defer fileHandler.Close()

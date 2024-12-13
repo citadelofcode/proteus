@@ -1,10 +1,10 @@
 package config
 
 import (
-	"errors"
+	"encoding/json"
 	"path/filepath"
 	"runtime"
-	"encoding/json"
+	"fmt"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
@@ -13,22 +13,30 @@ func GetConfig() (*Configuration ,error) {
 	var ServerConfig Configuration
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
-		return nil, errors.New("unable to access call stack to fetch current file being executed")
+		ce := new(ConfigError)
+		ce.Message = "Unable to access call stack to fetch the path for the current file"
+		return nil, ce
 	}
 	currentFilePath, err := filepath.Abs(file)
 	if err != nil {
-		return nil, err
+		ce := new(ConfigError)
+		ce.Message = fmt.Sprintf("Error while fetching absolute path: %s", err.Error())
+		return nil, ce
 	}
 	currentDirectory := filepath.Dir(currentFilePath)
 	configFilePath := filepath.Join(currentDirectory, "config.json")
 	fileContents, err := fs.ReadFileContents(configFilePath)
 	if err != nil {
-		return nil, err
+		ce := new(ConfigError)
+		ce.Message = err.Error()
+		return nil, ce
 	}
 
 	err = json.Unmarshal(fileContents, &ServerConfig)
 	if err != nil {
-		return nil, err
+		ce := new(ConfigError)
+		ce.Message = fmt.Sprintf("Error occurred while unmarshalling config file contents: %s", err.Error())
+		return nil, ce
 	}
 
 	return &ServerConfig, nil
