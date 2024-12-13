@@ -23,21 +23,25 @@ func Test_GetPathType(t *testing.T) {
 			PathType, err := GetPathType(testCase.testPath)
 			if testCase.ExpectedErrorType == "" {
 				if err != nil {
-					tt.Errorf("Was not expecting an error, but got %v instead", err)
+					tt.Errorf("Was not expecting an error, and yet received one - %v", err)
+					return
 				}
-				return
 			}
 
 			if testCase.ExpectedErrorType == "FileSystemError" {
-				_, ok := err.(*FileSystemError)
+				fsErr, ok := err.(*FileSystemError)
 				if !ok {
 					tt.Errorf("Expected a FileSystemError, but got %v instead", err)
+				} else {
+					tt.Logf("Received a FileSystemError as expected - %v", fsErr)
 				}
 				return
 			}
 
 			if !strings.EqualFold(PathType, testCase.ExpectedPathType) {
 				tt.Errorf("Computed path type (%s) does not match the expected path type (%s)", PathType, testCase.ExpectedPathType)
+			} else {
+				tt.Logf("Computed path type (%s) matches the expected path type (%s)", PathType, testCase.ExpectedPathType)
 			}
 		})
 	}

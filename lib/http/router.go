@@ -144,7 +144,7 @@ func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 		return nil, reError
 	}
 
-	if len(routeInfo.Segments) > 0 {
+	if routeInfo.Segments.Length() > 0 {
 		for key, values := range routeInfo.Segments {
 			request.Segments.Add(key, values)
 		}

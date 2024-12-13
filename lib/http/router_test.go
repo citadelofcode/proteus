@@ -4,18 +4,9 @@ import (
 	"testing"
 )
 
-// Helper method to create an instance of a router for testing.
-func getTestRouter(t testing.TB) *Router {
-	t.Helper()
-	testRouter := new(Router)
-	testRouter.Routes = make([]Route, 0)
-	testRouter.RouteTree = createTree()
-	return testRouter
-}
-
 // Test case to check the working of th route validation logic.
 func Test_ValidateRoute(t *testing.T) {
-	testRouter := getTestRouter(t)
+	testRouter := newRouter()
 	testCases := []struct {
 		Name string
 		InputRoute string
@@ -36,6 +27,12 @@ func Test_ValidateRoute(t *testing.T) {
 					tt.Errorf("The route (%s) is a valid route, but was deemed invalid.", testCase.InputRoute)
 				} else {
 					tt.Errorf("The route (%s) is an invalid route, but was deemed valid.", testCase.InputRoute)
+				}
+			} else {
+				if testCase.ExpectedOp {
+					tt.Logf("The route - %s was established correctly to be valid.", testCase.InputRoute)
+				} else {
+					tt.Logf("The route - %s was established correctly to be invalid.", testCase.InputRoute)
 				}
 			}
 		})

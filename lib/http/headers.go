@@ -30,3 +30,8 @@ func (headers Headers) Get(key string) (string, bool) {
 		return "", false
 	}
 }
+
+// Returns the number of header key-value pairs in the collection.
+func (headers Headers) Length() int {
+	return len(headers)
+}

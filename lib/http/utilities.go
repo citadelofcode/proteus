@@ -145,6 +145,22 @@ func getRfc1123Time() string {
 	return currentTime.Format(time.RFC1123)
 }
 
+// Checks if the given date time value corresponds to a valid HTTP date and returns two values.
+// First returned is a boolean value which indicates if the given date value conforms to a valid format.
+// Second returned is a time.Time value corresponding to the given string and if its invalid, returns the zero time.
+func isHttpDate(value string) (bool, time.Time) {
+	rfc1123Time, err := time.Parse(time.RFC1123, value)
+	ansicTime, errOne := time.Parse(time.ANSIC, value)
+
+	if err == nil {
+		return true, rfc1123Time
+	} else if errOne == nil {
+		return true, ansicTime
+	} else {
+		return false, time.Time{}
+	}
+}
+
 // Returns an instance of HTTP web server.
 func NewServer() *HttpServer {
 	if SrvLogger == nil {
