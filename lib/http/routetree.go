@@ -13,6 +13,14 @@ type routeTreeNode struct {
 	Children []*routeTreeNode
 }
 
+// Represents the data returned when a HTTP request route is matched to the routes configured in the router.
+type matchRouteInfo struct {
+	// List of all path parameter(s) present in the route path
+	Segments Params
+	// The complete route path matched.
+	RoutePath string
+}
+
 // Creates and returns pointer to a new node in the route tree.
 func newRouteTreeNode(RoutePart string) *routeTreeNode {
 	newNode := new(routeTreeNode)
@@ -49,6 +57,16 @@ func normalizeRoute(RoutePath string) []string {
 func addRouteToTree(RouteTree *routeTreeNode, RoutePath string) {
 	RouteParts := normalizeRoute(RoutePath)
 	RouteTree.insert(RouteParts)
+}
+
+// Returns a slice of strings which represents all the routes present in the given route tree.
+func getRoutesInTree(root *routeTreeNode) []string {
+	routes := root.getAllRoutes()
+	for index := 0; index < len(routes); index++ {
+		routes[index] = cleanRoute(routes[index])
+	}
+
+	return routes
 }
 
 // Match the given route path with the route tree and fetch all the path parameters. 
@@ -91,7 +109,9 @@ func matchRouteInTree(root *routeTreeNode, RoutePath string) *matchRouteInfo {
 		}
 	}	
 
-	routeInfo.RoutePath = strings.Join(finalRouteParts, "/")
+	routePathMatch := strings.Join(finalRouteParts, "/")
+	routePathMatch = cleanRoute(routePathMatch)
+	routeInfo.RoutePath = routePathMatch
 	return routeInfo
 }
 

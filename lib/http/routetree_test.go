@@ -60,20 +60,20 @@ func Test_RouteTree_AddNGetRoute(t *testing.T) {
 		AddedRoutePath string
 		ExpRouteCount int
 	} {
-		{ "Normal Route Path", "/abc/nbsdf/123", "abc/nbsdf/123", 1 },
-		{ "Route Path with a suffix", "/ahf/dggdg/sdfgdfg/", "ahf/dggdg/sdfgdfg", 2 },
-		{ "Route Path with two slashes in the middle", "/afsf/bfsdf//nfsdnf", "afsf/bfsdf/nfsdnf", 3 }, 
-		{ "Route Path with no prefix", "abc/ert/123", "abc/ert/123", 4 },
-		{ "Route path with no prefix and a suffix", "abc/dfgdf/sbfusd/124/", "abc/dfgdf/sbfusd/124", 5 },
-		{ "Route path with multiple slash characters as prefix", "//abc/xyz/pqr/123", "abc/xyz/pqr/123", 6 }, 
-		{ "Route path with multiple slash characters as suffix", "abc/fgbfdg/pqr/123//", "abc/fgbfdg/pqr/123", 7 },
-		{ "Route path with multiple slash characters as prefix and suffix", "//abc/bfghgf/pqr/123//", "abc/bfghgf/pqr/123", 8 },
+		{ "Normal Route Path", "/abc/nbsdf/123", "/abc/nbsdf/123", 1 },
+		{ "Route Path with a suffix", "/ahf/dggdg/sdfgdfg/", "/ahf/dggdg/sdfgdfg", 2 },
+		{ "Route Path with two slashes in the middle", "/afsf/bfsdf//nfsdnf", "/afsf/bfsdf/nfsdnf", 3 }, 
+		{ "Route Path with no prefix", "abc/ert/123", "/abc/ert/123", 4 },
+		{ "Route path with no prefix and a suffix", "abc/dfgdf/sbfusd/124/", "/abc/dfgdf/sbfusd/124", 5 },
+		{ "Route path with multiple slash characters as prefix", "//abc/xyz/pqr/123", "/abc/xyz/pqr/123", 6 }, 
+		{ "Route path with multiple slash characters as suffix", "abc/fgbfdg/pqr/123//", "/abc/fgbfdg/pqr/123", 7 },
+		{ "Route path with multiple slash characters as prefix and suffix", "//abc/bfghgf/pqr/123//", "/abc/bfghgf/pqr/123", 8 },
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			addRouteToTree(root, testCase.RoutePath)
-			routes := root.getAllRoutes()
+			routes := getRoutesInTree(root)
 			if slices.Contains(routes, testCase.AddedRoutePath) {
 				tt.Logf("The route %s was added successfully to the route tree.", testCase.RoutePath)
 			} else {
@@ -94,14 +94,16 @@ func Test_RouteTree_MatchRoute(t *testing.T) {
 	root := createTree()
 	addRouteToTree(root, "/users/list-all")
 	addRouteToTree(root, "/users/:userId/get_name")
+	addRouteToTree(root, "/files/static")
 	testCases := []struct {
 		Name string
 		RequestRoute string
 		MappedRoute string
 		PathParamCount int
 	} {
-		{ "Request Route Path with no path parameters", "/users/list-all", "users/list-all", 0 },
-		{ "Request Route Path with a single path parameter", "/users/6/get_name", "users/:userId/get_name", 1 },
+		{ "Request Route Path with no path parameters", "/users/list-all", "/users/list-all", 0 },
+		{ "Request Route Path with a single path parameter", "/users/6/get_name", "/users/:userId/get_name", 1 },
+		{ "Request route for a static resource", "/files/static/proteus/index.html", "/files/static", 0 },
 	}
 
 	for _, testCase := range testCases {

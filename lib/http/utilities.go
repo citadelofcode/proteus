@@ -2,15 +2,15 @@ package http
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"os"
-	"time"
-	"strings"
 	"path/filepath"
-	"strconv"
 	"slices"
-	"fmt"
+	"strconv"
+	"strings"
+	"time"
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
@@ -161,20 +161,29 @@ func isHttpDate(value string) (bool, time.Time) {
 	}
 }
 
+// Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.
+func cleanRoute(RoutePath string) string {
+	RoutePath = strings.TrimSpace(RoutePath)
+	RoutePath = strings.ToLower(RoutePath)
+	RoutePath = strings.TrimRight(RoutePath, "/")
+	RoutePath = strings.TrimLeft(RoutePath, "/")
+	RoutePath = "/" + RoutePath
+	return RoutePath
+}
+
+// Returns a pointer to a newly created instance of Logger.
+func newLogger() *Logger {
+	eventLogger := new(Logger)
+	eventLogger.srvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
+	return eventLogger
+}
+
 // Returns an instance of HTTP web server.
 func NewServer() *HttpServer {
-	if SrvLogger == nil {
-		SrvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
-	}
-
-	if ServerInstance == nil {
-		var server HttpServer
-		server.HostAddress = "";
-		server.PortNumber = 0
-		server.innerRouter = newRouter()
-		ServerInstance = &server
-		return &server
-	}
-
-	return ServerInstance
+	var server HttpServer
+	server.HostAddress = "";
+	server.PortNumber = 0
+	server.innerRouter = newRouter()
+	server.eventLogger = newLogger()
+	return &server
 }

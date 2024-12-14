@@ -7,9 +7,6 @@ import (
 	"github.com/maheshkumaarbalaji/proteus/lib/fs"
 )
 
-// Represents a handler function that is executed once any received request is parsed. You can define different handlers for different routes and HTTP methods.
-type Handler func (*HttpRequest, *HttpResponse)
-
 // Structure to contain information about a single route declared in the Router.
 type Route struct {
 	// Is true if the route path being defined points to a static folder path. Is false if the route path has a dynamic handler declared.
@@ -26,14 +23,6 @@ type Route struct {
 	RoutePath string
 }
 
-// Represents the data returned when a HTTP request route is matched to the routes configured in the router.
-type matchRouteInfo struct {
-	// List of all path parameter(s) present in the route path
-	Segments Params
-	// The complete route path matched.
-	RoutePath string
-}
-
 // Structure to hold all the routes and the associated routing logic.
 type Router struct {
 	// Collection of all routes defined in the router.
@@ -46,7 +35,6 @@ type Router struct {
 
 // Validates if a given route path is syntactically correct.
 func (rtr *Router) validateRoute(routePath string) bool {
-	routePath = strings.TrimSpace(routePath)
 	isRouteValid, err := regexp.MatchString("^/[a-zA-z][a-zA-Z0-9_/:-]*[a-zA-Z0-9]$", routePath)
 	if err != nil {
 		return false
@@ -61,7 +49,7 @@ func (rtr *Router) validateRoute(routePath string) bool {
 
 // Adds a new static route and target folder to the static routes collection.
 func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath string) error {
-	RoutePath = strings.TrimSpace(RoutePath)
+	RoutePath = cleanRoute(RoutePath)
 	TargetPath = strings.TrimSpace(TargetPath)
 	Method = strings.TrimSpace(Method)
 	Method = strings.ToUpper(Method)
@@ -106,7 +94,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 
 // Adds a new dynamic route and its associated handler function to the collection of routes defined in the router instance.
 func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc Handler) error {
-	RoutePath = strings.TrimSpace(RoutePath)
+	RoutePath = cleanRoute(RoutePath)
 	Method = strings.TrimSpace(Method)
 	Method = strings.ToUpper(Method)
 
@@ -154,6 +142,9 @@ func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 	for _, route := range rtr.Routes {
 		if strings.EqualFold(routeInfo.RoutePath, route.RoutePath) {
 			handler = route.RouteHandler
+			if route.IsStatic {
+				request.staticFilePath = strings.Replace(request.ResourcePath, routeInfo.RoutePath, route.StaticFolderPath, 1)
+			}
 			break
 		}
 	}

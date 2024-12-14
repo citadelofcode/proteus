@@ -64,14 +64,12 @@ func (code StatusCode) GetErrorContent() string {
 		if code == stat.Code {
 			temp, err := template.New("errorResponse").Parse(htmlTemplate)
 			if err != nil {
-				LogError(err.Error())
 				break
 			}
 
 			var tmpBytes bytes.Buffer
 			err = temp.Execute(&tmpBytes, stat)
 			if err != nil {
-				LogError(err.Error())
 				break
 			}
 

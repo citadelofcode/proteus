@@ -4,44 +4,33 @@ import (
 	"strings"
 )
 
+// Represents a handler function that is executed once any received request is parsed. You can define different handlers for different routes and HTTP methods.
+type Handler func (*HttpRequest, *HttpResponse) error
+
 // Handler to fetch static file and send the file contents as response back to the client.
-var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
+var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) error {
 	targetFilePath := request.staticFilePath
 	targetFilePath = strings.TrimSpace(targetFilePath)
 	isCondGet, err := request.isConditionalGet(targetFilePath)
 	if err != nil {
-		LogError(err.Error())
-		response.Status(StatusInternalServerError)
-		err = response.SendError(StatusInternalServerError.GetErrorContent())
-		if err != nil {
-			LogError(err.Error())
-		}
-		return
+		return err
 	}
 
-	var errSend error
 	if isCondGet {
 		response.Status(StatusOK)
-		errSend = response.SendFile(targetFilePath, false)
+		return response.SendFile(targetFilePath, false)
 	} else {
 		response.Status(StatusNotModified)
-		errSend = response.SendFile(targetFilePath, true)
-	}
-
-	if errSend != nil {
-		LogError(errSend.Error())
+		return response.SendFile(targetFilePath, true)
 	}
 }
 
 // Default error handler logic to be implemented for sending an error response back to client.
-var ErrorHandler = func (request *HttpRequest, response *HttpResponse) {
+var ErrorHandler = func (request *HttpRequest, response *HttpResponse) error {
 	if response.StatusCode == int(StatusMethodNotAllowed) {
 		response.Headers.Add("Allow", getAllowedMethods(response.Version))
 	} 
 
 	statusCode := StatusCode(response.StatusCode)
-	err := response.SendError(statusCode.GetErrorContent())
-	if err != nil {
-		LogError(err.Error())
-	}
+	return response.SendError(statusCode.GetErrorContent())
 }
