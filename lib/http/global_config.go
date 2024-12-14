@@ -1,7 +1,6 @@
 package http
 
 import (
-	"log"
 	"github.com/maheshkumaarbalaji/proteus/lib/config"
 )
 
@@ -12,10 +11,6 @@ const (
 	HEADER_KEY_VALUE_SEPERATOR = ":"
 )
 
-// Global logger instance to log messages generated while HTTP server processes incoming requests.
-var SrvLogger *log.Logger = nil
-// Global instance of HTTP web server.
-var ServerInstance *HttpServer = nil
 // Collection of headers supported by the server that has a date value.
 var DateHeaders []string
 // List of content types supported by the web server.

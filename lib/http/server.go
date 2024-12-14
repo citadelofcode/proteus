@@ -17,6 +17,8 @@ type HttpServer struct {
 	Socket net.Listener
 	// Router instance that contains all the routes and their associated handlers.
 	innerRouter *Router
+	// Logger instance associated with the Server instance.
+	eventLogger *Logger
 }
 
 // Define a static route and map to a static file or folder in the file system.
@@ -51,22 +53,22 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	serverAddress := srv.HostAddress + ":" + strconv.Itoa(srv.PortNumber)
 	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		LogError(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()))
+		srv.eventLogger.LogError(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()))
 		return
 	}
 
 	srv.Socket = server
 	defer srv.Socket.Close()
-	LogInfo(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
+	srv.eventLogger.LogInfo(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
 
 	for {
 		clientConnection, err := srv.Socket.Accept()
 		if err != nil {
-			LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+			srv.eventLogger.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
 			continue
 		}
 
-		LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
+		srv.eventLogger.LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
 		go srv.handleClient(clientConnection)
 	}
 }
@@ -77,7 +79,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	httpRequest := newRequest(ClientConnection)
 	err := httpRequest.read()
 	if err != nil {
-		LogError(err.Error())
+		srv.eventLogger.LogError(err.Error())
 		return
 	}
 
@@ -85,15 +87,24 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 
 	if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
 		httpResponse.Status(StatusMethodNotAllowed)
-		ErrorHandler(httpRequest, httpResponse)
+		err = ErrorHandler(httpRequest, httpResponse)
+		if err != nil {
+			srv.eventLogger.LogError(err.Error())
+		}
 	} else {
 		routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
 		if err != nil {
-			LogError(err.Error())
+			srv.eventLogger.LogError(err.Error())
 			httpResponse.Status(StatusNotFound)
-			ErrorHandler(httpRequest, httpResponse)
+			err = ErrorHandler(httpRequest, httpResponse)
+			if err != nil {
+				srv.eventLogger.LogError(err.Error())
+			}
 		} else {
-			routeHandler(httpRequest, httpResponse)
+			err = routeHandler(httpRequest, httpResponse)
+			if err != nil {
+				srv.eventLogger.LogError(err.Error())
+			}
 		}
 	}
 }
