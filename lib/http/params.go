@@ -11,13 +11,19 @@ type Params map[string][]string
 func (pr Params) Get(key string) ([]string, bool) {
 	key = strings.TrimSpace(key)
 	values, ok := pr[key]
-	return values, ok
+	if !ok {
+		return nil, false
+	}
+	return values, true
 }
 
 // Adds the given key-values pair to the params collection.
 func (pr Params) Add(key string, paramValues []string) {
 	key = strings.TrimSpace(key)
-	values := make([]string, 0)
+	values, ok := pr[key]
+	if !ok {
+		values = make([]string, 0)
+	}
 	values = append(values, paramValues...)
 	pr[key] = values
 }

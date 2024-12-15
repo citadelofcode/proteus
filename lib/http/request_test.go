@@ -6,6 +6,7 @@ import (
 	"bufio"
 )
 
+// Helper function to create and return a new test instance of HttpRequest.
 func newTestRequest(t testing.TB) *HttpRequest {
 	t.Helper()
 	testReq := new(HttpRequest)
@@ -14,7 +15,7 @@ func newTestRequest(t testing.TB) *HttpRequest {
 }
 
 // Test case to validate the HTTP request message read and parse functionality.
-func Test_RequestRead(t *testing.T) {
+func Test_Request_Read(t *testing.T) {
 	testCases := []struct {
 		Name string
 		InputRequest string
@@ -74,7 +75,7 @@ func Test_RequestRead(t *testing.T) {
 }
 
 // Test case to validate the addition of headers to a HTTP request message.
-func Test_AddHeader(t *testing.T) {
+func Test_Request_AddHeader(t *testing.T) {
 	testRequest := newTestRequest(t)
 	testCases := []struct {
 		Name string

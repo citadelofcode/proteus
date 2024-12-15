@@ -35,16 +35,19 @@ type HttpResponse struct {
 	Body []byte
 	// Streamed writer instance to write the response bytes to the network stream.
 	writer *bufio.Writer
+	// Boolean value to indicate if the response created is a test object.
+	isTest bool
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
-func (res *HttpResponse) initialize(version string) {
+func (res *HttpResponse) initialize(version string, isTest bool) {
 	version = strings.TrimSpace(version)
 	if version == "" {
 		res.Version = "0.9"
 	} else {
 		res.Version = version
 	}
+	res.isTest = isTest
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
@@ -56,15 +59,17 @@ func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 }
 
 // Adds all the general HTTP headers to the HttpResponse instance.
+// Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addGeneralHeaders() {
-	if !strings.EqualFold(res.Version, "0.9") {
+	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
 		res.Headers.Add("Date", getRfc1123Time())
 	}
 }
 
-// Adds all the default response HTTP headers to the HttpResponse instance.
+// Adds all the default response HTTP headers to the HttpResponse instance. 
+// Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addResponseHeaders() {
-	if !strings.EqualFold(res.Version, "0.9") {
+	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
 		res.Headers.Add("Server", getServerDefaults("server_name"))
 	}
 }
