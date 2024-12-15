@@ -39,4 +39,4 @@ This command runs the test cases defined for the entire `http` package. To run f
 
 The `proteus` web server is compliant with the below RFCs.
 
-- [HTTP/1.0 - RFC 1945](https://datatracker.ietf.org/doc/html/rfc1945)
+- [HTTP/0.9 & HTTP/1.0 - RFC 1945](https://datatracker.ietf.org/doc/html/rfc1945)

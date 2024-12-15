@@ -125,7 +125,7 @@ func newRequest(Connection net.Conn) *HttpRequest {
 // Creates and returns pointer to a new instance of HTTP response.
 func newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.initialize(getResponseVersion(request.Version))
+	httpResponse.initialize(getResponseVersion(request.Version), false)
 	writer := bufio.NewWriter(Connection)
 	httpResponse.setWriter(writer)
 	return &httpResponse
