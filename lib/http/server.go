@@ -18,7 +18,7 @@ type HttpServer struct {
 	// Router instance that contains all the routes and their associated handlers.
 	innerRouter *Router
 	// Logger instance associated with the Server instance.
-	eventLogger *Logger
+	eventLogger *logger
 }
 
 // Define a static route and map to a static file or folder in the file system.
@@ -53,22 +53,22 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	serverAddress := srv.HostAddress + ":" + strconv.Itoa(srv.PortNumber)
 	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		srv.eventLogger.LogError(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()))
+		srv.LogError(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()))
 		return
 	}
 
 	srv.Socket = server
 	defer srv.Socket.Close()
-	srv.eventLogger.LogInfo(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
+	srv.LogInfo(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
 
 	for {
 		clientConnection, err := srv.Socket.Accept()
 		if err != nil {
-			srv.eventLogger.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+			srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
 			continue
 		}
 
-		srv.eventLogger.LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
+		srv.LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
 		go srv.handleClient(clientConnection)
 	}
 }
@@ -79,7 +79,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	httpRequest := newRequest(ClientConnection)
 	err := httpRequest.read()
 	if err != nil {
-		srv.eventLogger.LogError(err.Error())
+		srv.LogError(err.Error())
 		return
 	}
 
@@ -89,21 +89,21 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpResponse.Status(StatusMethodNotAllowed)
 		err = ErrorHandler(httpRequest, httpResponse)
 		if err != nil {
-			srv.eventLogger.LogError(err.Error())
+			srv.LogError(err.Error())
 		}
 	} else {
 		routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
 		if err != nil {
-			srv.eventLogger.LogError(err.Error())
+			srv.LogError(err.Error())
 			httpResponse.Status(StatusNotFound)
 			err = ErrorHandler(httpRequest, httpResponse)
 			if err != nil {
-				srv.eventLogger.LogError(err.Error())
+				srv.LogError(err.Error())
 			}
 		} else {
 			err = routeHandler(httpRequest, httpResponse)
 			if err != nil {
-				srv.eventLogger.LogError(err.Error())
+				srv.LogError(err.Error())
 			}
 		}
 	}
@@ -140,4 +140,16 @@ func (srv *HttpServer) Post(routePath string, handlerFunc Handler) error {
 	}
 
 	return nil
+}
+
+// Logs the given message as an error in the server logs.
+func (srv *HttpServer) LogError(message string) {
+	message = strings.TrimSpace(message)
+	srv.eventLogger.logError(message)
+}
+
+// Logs the given message as an information in the server logs.
+func (srv *HttpServer) LogInfo(message string) {
+	message = strings.TrimSpace(message)
+	srv.eventLogger.logInfo(message)
 }
