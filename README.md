@@ -1,6 +1,6 @@
 # Proteus
 
-Proteus is a versatile web server framework written using Go. ***Currently, this framework supports only HTTP/1.0 requests.***
+Proteus is a versatile web server framework written using Go. ***Currently, this framework supports only HTTP/0.9 and HTTP/1.0 requests.***
 
 ## Running the project
 
@@ -14,6 +14,34 @@ go build -o proteus.out
 
 # Below command runs the executable file.
 ./proteus.out
+```
+
+## Example Usage
+
+To work with creating a HTTP server and process incoming requests, add the below import statement at the top of your Go file.
+
+```
+import "github.com/maheshkumaarbalaji/proteus/lib/http"
+```
+
+Once the import statement is included, use the below statement to create a new instance of a web server to handle incoming HTTP requests.
+
+```
+server := http.NewServer()
+```
+
+Please note that, the above statement merely creates an instance of the web server. To make it listen for incoming requests, use the **Listen()** method of the server instance, as given below.
+
+```
+server.Listen(8080, "localhost")
+```
+
+The **Listen()** method accepts two arguments - the port number where the server will listen for incoming requests and the hostname of the machine where the server instance is running.
+
+To create static directory in the web server instance, use the following code.
+
+```
+server.Static("/files/static", **TargetDirectoryPath**)
 ```
 
 ## Testing
