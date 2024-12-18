@@ -20,19 +20,19 @@ go build -o proteus.out
 
 To work with creating a HTTP server and process incoming requests, add the below import statement at the top of your Go file.
 
-```
+```go
 import "github.com/maheshkumaarbalaji/proteus/lib/http"
 ```
 
 Once the import statement is included, use the below statement to create a new instance of a web server to handle incoming HTTP requests.
 
-```
+```go
 server := http.NewServer()
 ```
 
 Please note that, the above statement merely creates an instance of the web server. To make it listen for incoming requests, use the **Listen()** method of the server instance, as given below.
 
-```
+```go
 server.Listen(8080, "localhost")
 ```
 
@@ -40,7 +40,7 @@ The **Listen()** method accepts two arguments - the port number where the server
 
 To create static directory in the web server instance, use the following code.
 
-```
+```go
 server.Static("/files/static", **TargetDirectoryPath**)
 ```
 

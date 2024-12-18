@@ -151,11 +151,14 @@ func getRfc1123Time() string {
 func isHttpDate(value string) (bool, time.Time) {
 	rfc1123Time, err := time.Parse(time.RFC1123, value)
 	ansicTime, errOne := time.Parse(time.ANSIC, value)
+	rfc850Time, errTwo := time.Parse(time.RFC850, value)
 
 	if err == nil {
 		return true, rfc1123Time
 	} else if errOne == nil {
 		return true, ansicTime
+	} else if errTwo == nil {
+		return true, rfc850Time
 	} else {
 		return false, time.Time{}
 	}
@@ -172,9 +175,10 @@ func cleanRoute(RoutePath string) string {
 }
 
 // Returns a pointer to a newly created instance of Logger.
-func newLogger() *Logger {
-	eventLogger := new(Logger)
-	eventLogger.srvLogger = log.New(os.Stdout, "", log.Ldate | log.Ltime)
+func newLogger() *logger {
+	eventLogger := new(logger)
+	eventLogger.srvLogger = log.New(os.Stdout, "", log.LstdFlags)
+	eventLogger.serverName = getServerDefaults("server_name")
 	return eventLogger
 }
 
