@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/mkbworks/proteus/lib/fs"
 )
 
 // Structure to represent a response status code and its associated information.

@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/mkbworks/proteus/lib/fs"
 )
 
 // Structure to represent a HTTP request received by the web server.

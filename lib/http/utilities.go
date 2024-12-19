@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/mkbworks/proteus/lib/fs"
 )
 
 // Returns the file media type for the given file path.

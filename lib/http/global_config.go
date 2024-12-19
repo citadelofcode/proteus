@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/maheshkumaarbalaji/proteus/lib/config"
+	"github.com/mkbworks/proteus/lib/config"
 )
 
 const (

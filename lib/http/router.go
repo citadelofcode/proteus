@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/mkbworks/proteus/lib/fs"
 )
 
 // Structure to contain information about a single route declared in the Router.
