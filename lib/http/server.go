@@ -107,6 +107,8 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 		}
 	}
+
+	srv.Log(httpRequest, httpResponse)
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.

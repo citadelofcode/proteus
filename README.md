@@ -44,6 +44,16 @@ To create static directory in the web server instance, use the following code.
 server.Static("/files/static", **TargetDirectoryPath**)
 ```
 
+To declare a custom route and its associated handler function, refer to the following code snippet.
+
+```go
+server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
+    names, _ := req.Segments.Get("name")
+    fmt.Printf("The name value in the path is %s\n", strings.Join(names, ","))
+    return nil
+})
+```
+
 ## Testing
 
 Each package in the module contains unit test scripts which can be identified by the "_test.go" suffix present in the files. To run all test scripts in the module, execute the following command.

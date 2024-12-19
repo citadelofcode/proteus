@@ -30,9 +30,9 @@ type HttpRequest struct {
 	reader *bufio.Reader
 	// Contains the target file path in case the request is for a static file.
 	staticFilePath string
-	// Collection of all query parameters
+	// Collection of all query parameters stored as key-values pair.
 	Query Params
-	// Collection of all path parameter values
+	// Collection of all path parameter values stored as key-value pair.
 	Segments Params
 	// The IP address and port number of the client who made the request to the server
 	ClientAddress string
