@@ -119,6 +119,7 @@ func newRequest(Connection net.Conn) *HttpRequest {
 	httpRequest.initialize()
 	reader := bufio.NewReader(Connection)
 	httpRequest.setReader(reader)
+	httpRequest.ClientAddress = Connection.RemoteAddr().String()
 	return &httpRequest
 }
 

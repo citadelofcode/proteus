@@ -34,6 +34,8 @@ type HttpRequest struct {
 	Query Params
 	// Collection of all path parameter values
 	Segments Params
+	// The IP address and port number of the client who made the request to the server
+	ClientAddress string
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields. 

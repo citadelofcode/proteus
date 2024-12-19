@@ -7,6 +7,10 @@
         {
             "versionNumber": "1.0",
             "allowed_methods": ["GET", "HEAD", "POST"]
+        },
+        {
+            "versionNumber": "1.1",
+            "allowed_methods": ["GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT"]
         }
     ],
     "content_types": {
@@ -70,6 +74,14 @@
     },
     "date_headers": ["Date", "Expires", "If-Modified-Since", "Last-Modified"],
     "status_codes": [{
+        "Code": 100,
+        "Message": "Continue",
+        "ErrorDescription": ""
+    },{
+        "Code": 101,
+        "Message": "Switching Protocols",
+        "ErrorDescription": ""
+    },{
         "Code": 200,
         "Message": "OK",
         "ErrorDescription": ""
@@ -90,6 +102,14 @@
         "Message": "No Content",
         "ErrorDescription": ""
     }, {
+        "Code": 205,
+        "Message": "Reset Content",
+        "ErrorDescription": ""
+    }, {
+        "Code": 206,
+        "Message": "Partial Content",
+        "ErrorDescription": ""
+    }, {
         "Code": 300,
         "Message": "Multiple Choices",
         "ErrorDescription": ""
@@ -108,6 +128,14 @@
     }, {
         "Code": 304,
         "Message": "Not Modified",
+        "ErrorDescription": ""
+    }, {
+        "Code": 305,
+        "Message": "Use Proxy",
+        "ErrorDescription": ""
+    }, {
+        "Code": 307,
+        "Message": "Temporary Redirect",
         "ErrorDescription": ""
     }, {
         "Code": 400,
@@ -158,9 +186,33 @@
         "Message": "Length Required",
         "ErrorDescription": "The request sent does not contain 'Content-Length' value."
     }, {
+        "Code": 412,
+        "Message": "Precondition Failed",
+        "ErrorDescription": ""
+    }, {
+        "Code": 413,
+        "Message": "Request Entity Too Large",
+        "ErrorDescription": "The entiry requested is too large."
+    }, {
+        "Code": 414,
+        "Message": "Request URI Too Large",
+        "ErrorDescription": "The request URI received is too large."
+    }, {
+        "Code": 415,
+        "Message": "Unsupported Media Type",
+        "ErrorDescription": "The requested media type is not supported by the server."
+    }, {
+        "Code": 416,
+        "Message": "Requested Range Not Satisfiable",
+        "ErrorDescription": ""
+    }, {
         "Code": 500,
         "Message": "Internal Server Error",
         "ErrorDescription": "Your request cannot be completed due to a server error."
+    }, {
+        "Code": 417,
+        "Message": "Expectation Failed",
+        "ErrorDescription": ""
     }, {
         "Code": 501,
         "Message": "Not Implemented",
@@ -177,5 +229,9 @@
         "Code": 504,
         "Message": "Gateway Timeout",
         "ErrorDescription": "The server is not responding."
+    }, {
+        "Code": 505,
+        "Message": "HTTP Version Not Supported",
+        "ErrorDescription": "Received HTTP version is not supported by the server."
     }]
 }

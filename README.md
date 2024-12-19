@@ -63,8 +63,9 @@ go test ./lib/http -v -cover
 
 This command runs the test cases defined for the entire `http` package. To run for a package of your choice, replace `http` with the name of the package for which you want to run the test cases.
 
-## Compliance
+## HTTP Version Compatibility
 
-The `proteus` web server is compliant with the below RFCs.
+The `proteus` web server supports the below HTTP versions.
 
 - [HTTP/0.9 & HTTP/1.0 - RFC 1945](https://datatracker.ietf.org/doc/html/rfc1945)
+- [HTTP/1.1 - RFC 2616](https://datatracker.ietf.org/doc/html/rfc2616#autoid-45)
