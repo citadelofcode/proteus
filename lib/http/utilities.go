@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/maheshkumaarbalaji/proteus/lib/fs"
+	"github.com/mkbworks/proteus/lib/fs"
 )
 
 // Returns the file media type for the given file path.
@@ -119,6 +119,7 @@ func newRequest(Connection net.Conn) *HttpRequest {
 	httpRequest.initialize()
 	reader := bufio.NewReader(Connection)
 	httpRequest.setReader(reader)
+	httpRequest.ClientAddress = Connection.RemoteAddr().String()
 	return &httpRequest
 }
 

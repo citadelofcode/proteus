@@ -107,6 +107,8 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 		}
 	}
+
+	srv.Log(httpRequest, httpResponse)
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
@@ -142,6 +144,61 @@ func (srv *HttpServer) Post(routePath string, handlerFunc Handler) error {
 	return nil
 }
 
+// Creates a new PUT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
+func (srv *HttpServer) Put(routePath string, handlerFunc Handler) error {
+	routePath = strings.TrimSpace(routePath)
+	err := srv.innerRouter.addDynamicRoute("PUT", routePath, handlerFunc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Creates a new DELETE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
+func (srv *HttpServer) Delete(routePath string, handlerFunc Handler) error {
+	routePath = strings.TrimSpace(routePath)
+	err := srv.innerRouter.addDynamicRoute("DELETE", routePath, handlerFunc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Creates a new TRACE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
+func (srv *HttpServer) Trace(routePath string, handlerFunc Handler) error {
+	routePath = strings.TrimSpace(routePath)
+	err := srv.innerRouter.addDynamicRoute("TRACE", routePath, handlerFunc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Creates a new OPTIONS endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
+func (srv *HttpServer) Options(routePath string, handlerFunc Handler) error {
+	routePath = strings.TrimSpace(routePath)
+	err := srv.innerRouter.addDynamicRoute("OPTIONS", routePath, handlerFunc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Creates a new CONNECT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
+func (srv *HttpServer) Connect(routePath string, handlerFunc Handler) error {
+	routePath = strings.TrimSpace(routePath)
+	err := srv.innerRouter.addDynamicRoute("CONNECT", routePath, handlerFunc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Logs the given message as an error in the server logs.
 func (srv *HttpServer) LogError(message string) {
 	message = strings.TrimSpace(message)
@@ -152,4 +209,14 @@ func (srv *HttpServer) LogError(message string) {
 func (srv *HttpServer) LogInfo(message string) {
 	message = strings.TrimSpace(message)
 	srv.eventLogger.logInfo(message)
+}
+
+// Logs the status for a HTTP request to the server logger.
+func (srv *HttpServer) Log(request *HttpRequest, response *HttpResponse) {
+	logMsg := fmt.Sprintf("  %s  %s  %s  HTTP/%s  %d  %s", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, response.StatusMessage)
+	if response.StatusCode < 400 {
+		srv.eventLogger.logInfo(logMsg)
+	} else {
+		srv.eventLogger.logError(logMsg)
+	}
 }
