@@ -1,6 +1,8 @@
 # Proteus
 
-Proteus is a versatile web server framework written using Go. ***Currently, this framework supports only HTTP/0.9 and HTTP/1.0 requests.***
+Proteus is a versatile web server framework written using Go. 
+
+This is my solution to the challenge available at [Coding Challenges](https://codingchallenges.fyi/challenges/challenge-webserver) to create my own web server.
 
 ## Running the project
 
