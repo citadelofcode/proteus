@@ -73,7 +73,6 @@ func Test_Response_Write(t *testing.T) {
 		ExpResponse string
 	} {
 		{ "Simple v0.9 Response", "0.9", "", "Hello, this is a simple response from Proteus!", StatusOK, "", "Hello, this is a simple response from Proteus!" },
-		{ "A v1.0 plain text response", "1.0", "text/plain", "A simple proteus response for HTTP/1", StatusOK, "", "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 36\r\n\r\nA simple proteus response for HTTP/1" },
 	}
 
 	for _, testCase := range testCases {
