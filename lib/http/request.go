@@ -42,7 +42,7 @@ type HttpRequest struct {
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
-	req.Version = getHighestVersion()
+	req.Version = "0.9"
 	req.staticFilePath = ""
 	req.Query = nil
 	req.Segments = nil

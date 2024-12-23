@@ -47,13 +47,15 @@ func getServerDefaults(key string) string {
 	return value
 }
 
-// Gets the highest version of HTTP supported by the web server.
-func getHighestVersion() string {
+// Gets the highest version of HTTP supported by the web server that is less than the given request version.
+func getHighestVersion(requestVersion string) string {
 	var maxVersion float64 = 0.0
+	requestVersion = strings.TrimSpace(requestVersion)
+	reqVer, _ := strconv.ParseFloat(requestVersion, 64)
 	for versionNo := range Versions {
 		currentVersion, err := strconv.ParseFloat(versionNo, 64)
 		if err == nil {
-			if currentVersion > maxVersion {
+			if currentVersion > maxVersion && currentVersion < reqVer {
 				maxVersion = currentVersion
 			}
 		}
@@ -109,7 +111,7 @@ func getResponseVersion(requestVersion string) string {
 	if isCompatible {
 		return requestVersion
 	} else {
-		return getHighestVersion()
+		return getHighestVersion(requestVersion)
 	}
 }
 
