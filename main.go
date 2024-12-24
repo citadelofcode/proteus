@@ -21,6 +21,8 @@ func main() {
 	server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
 		names, _ := req.Segments.Get("name")
 		fmt.Printf("The name value in the path is %s\n", strings.Join(names, ","))
+		res.Status(http.StatusOK)
+		res.Send("The name parameter value received is: " + strings.Join(names, ", "))
 		return nil
 	})
 	

@@ -275,3 +275,14 @@ func (res *HttpResponse) SendError(Content string) error {
 
 	return nil
 }
+
+// Send the given string as response back to the client.
+func (res *HttpResponse) Send(content string) error {
+	content = strings.TrimSpace(content)
+	contentBuffer := []byte(content)
+	res.Headers.Add("Content-Type", "text/plain")
+	res.Headers.Add("Content-Length", strconv.Itoa(len(contentBuffer)))
+	res.Body = contentBuffer
+	err := res.write()
+	return err
+}

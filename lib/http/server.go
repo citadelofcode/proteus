@@ -2,10 +2,43 @@ package http
 
 import (
 	"fmt"
+	"math"
 	"net"
+	"os"
+	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 )
+
+// Number of CPUs that can be used for facilitating concurrency.
+var numCPU = runtime.NumCPU()
+
+// Structure to track all the active connections maintained by the server.
+type ConnectionWatcher struct {
+	// Mutex to synchronize read-write activities for tracking the number of active connections.
+	mu sync.RWMutex
+	// Contains the number of active connections with the server.
+	connCount int
+}
+
+// Updates the connection count by increasing by given delta.
+func (cw *ConnectionWatcher) UpdateCount(delta int) {
+	cw.mu.Lock()
+	cw.connCount += delta
+	cw.mu.Unlock()
+}
+
+// Returns the connection count value for the ConnectionWatcher instance..
+func (cw *ConnectionWatcher) GetCount() int {
+	cw.mu.RLock()
+	count := cw.connCount
+	cw.mu.RUnlock()
+	return count
+}
 
 // Structure to create an instance of a web server.
 type HttpServer struct {
@@ -19,6 +52,12 @@ type HttpServer struct {
 	innerRouter *Router
 	// Logger instance associated with the Server instance.
 	eventLogger *logger
+	// Waitgroup to synchronize the termination of all request connections.
+	wg sync.WaitGroup
+	// Channel to transmit server shutdown signal across all goroutines.
+	shutdown chan struct{}
+	// Instance of ConnectionWatcher.
+	cw *ConnectionWatcher
 }
 
 // Define a static route and map to a static file or folder in the file system.
@@ -59,56 +98,130 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 
 	srv.Socket = server
 	defer srv.Socket.Close()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	if srv.shutdown == nil {
+		srv.shutdown = make(chan struct{})
+	}
+
+	srv.cw = new(ConnectionWatcher)
 	srv.LogInfo(fmt.Sprintf("Web server is listening at http://%s", serverAddress))
+	srv.LogInfo("To terminate the server, press Ctrl + C")
+	srv.wg.Add(1)
+	go srv.acceptConnections()
+	<-sigChan
+	srv.LogInfo("Server shutdown signal received...")
+	close(srv.shutdown)
+	srv.LogInfo("Server Shutdown initiated :: All existing connections are being terminated.")
+	srv.wg.Wait()
+	srv.LogInfo("All existing connections have been terminated. Shutting down server now...")
+}
 
+// Accepts incoming connections and creates seperate goroutines for each new client.
+func (srv *HttpServer) acceptConnections() {
+	defer srv.wg.Done()
 	for {
-		clientConnection, err := srv.Socket.Accept()
-		if err != nil {
-			srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
-			continue
-		}
+		select {
+		case <-srv.shutdown:
+			srv.LogInfo("Server Shutdown initiated :: No new connections will be accepted from now.")
+			return
+		default:
+			clientConnection, err := srv.Socket.Accept()
+			if err != nil {
+				srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+				continue
+			}
 
-		srv.LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
-		go srv.handleClient(clientConnection)
+			srv.LogInfo(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()))
+			srv.wg.Add(1)
+			go srv.handleClient(clientConnection)
+			srv.cw.UpdateCount(1)
+		}
 	}
 }
 
 // Handles incoming HTTP requests sent from each individual client trying to connect to the web server instance.
 func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
+	defer srv.wg.Done()
+	defer srv.cw.UpdateCount(-1)
 	defer ClientConnection.Close()
-	httpRequest := newRequest(ClientConnection)
-	err := httpRequest.read()
-	if err != nil {
-		srv.LogError(err.Error())
-		return
-	}
 
-	httpResponse := newResponse(ClientConnection, httpRequest)
-
-	if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
-		httpResponse.Status(StatusMethodNotAllowed)
-		err = ErrorHandler(httpRequest, httpResponse)
+	handleRequest := func() int {
+		httpRequest := newRequest(ClientConnection)
+		err := httpRequest.read()
 		if err != nil {
 			srv.LogError(err.Error())
+			return 0
 		}
-	} else {
-		routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
-		if err != nil {
-			srv.LogError(err.Error())
-			httpResponse.Status(StatusNotFound)
+
+		httpResponse := newResponse(ClientConnection, httpRequest)
+		var timeout int
+		connValue, ok := httpRequest.Headers.Get("Connection")
+		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
+			currCount := srv.cw.GetCount()
+			timeout, max := srv.getKeepAliveHeuristic(currCount)
+			ClientConnection.(*net.TCPConn).SetKeepAlive(true)
+			ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+			httpResponse.Headers.Add("Connection", "keep-alive")
+			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
+		}
+
+		if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
+			httpResponse.Status(StatusMethodNotAllowed)
 			err = ErrorHandler(httpRequest, httpResponse)
 			if err != nil {
 				srv.LogError(err.Error())
 			}
 		} else {
-			err = routeHandler(httpRequest, httpResponse)
+			routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
 			if err != nil {
 				srv.LogError(err.Error())
+				httpResponse.Status(StatusNotFound)
+				err = ErrorHandler(httpRequest, httpResponse)
+				if err != nil {
+					srv.LogError(err.Error())
+				}
+			} else {
+				err = routeHandler(httpRequest, httpResponse)
+				if err != nil {
+					srv.LogError(err.Error())
+				}
 			}
 		}
+
+		srv.Log(httpRequest, httpResponse)
+		return timeout
 	}
 
-	srv.Log(httpRequest, httpResponse)
+	timer := time.NewTimer(0)
+	defer timer.Stop()
+
+	for {
+		timeout := handleRequest()
+		if !timer.Stop() {
+			<-timer.C
+		}
+
+		timer.Reset(time.Duration(timeout) * time.Second)
+
+		select {
+		case <-srv.shutdown:
+			srv.LogInfo("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String())
+			return
+		case <-timer.C:
+			srv.LogInfo(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()))
+		default:
+		}
+	}
+}
+
+// Server's Keep-Alive heuristic which returns the timeout value and the maximum number of requests that can be processed by a single connection.
+func (srv *HttpServer) getKeepAliveHeuristic(connCount int) (int, int) {
+	usableCPU := numCPU - 1
+	scalingFactor := 2.0
+	timeout := 15 / (1 + math.Exp(scalingFactor * float64(connCount - usableCPU)))
+	return int(math.Ceil(timeout)), 100
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
