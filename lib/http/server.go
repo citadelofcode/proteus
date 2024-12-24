@@ -19,7 +19,7 @@ var numCPU = runtime.NumCPU()
 
 // Structure to track all the active connections maintained by the server.
 type ConnectionWatcher struct {
-	// Mutex to synchronize read-write activities for connection count.
+	// Mutex to synchronize read-write activities for tracking the number of active connections.
 	mu sync.RWMutex
 	// Contains the number of active connections with the server.
 	connCount int
@@ -156,17 +156,15 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 
 		httpResponse := newResponse(ClientConnection, httpRequest)
-		var timeout, max int
+		var timeout int
 		connValue, ok := httpRequest.Headers.Get("Connection")
-		if ok {
-			if strings.EqualFold(connValue, "keep-alive") {
-				currCount := srv.cw.GetCount()
-				timeout, max = srv.getKeepAliveHeuristic(currCount)
-				ClientConnection.(*net.TCPConn).SetKeepAlive(true)
-				ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
-				httpResponse.AddHeader("Connection", "keep-alive")
-				httpResponse.AddHeader("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
-			}
+		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
+			currCount := srv.cw.GetCount()
+			timeout, max := srv.getKeepAliveHeuristic(currCount)
+			ClientConnection.(*net.TCPConn).SetKeepAlive(true)
+			ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+			httpResponse.Headers.Add("Connection", "keep-alive")
+			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
 		}
 
 		if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
@@ -196,17 +194,22 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		return timeout
 	}
 
-	var timer <-chan time.Time
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		timeout := handleRequest()
-		timer = time.After(time.Duration(timeout) * time.Second)
+		if !timer.Stop() {
+			<-timer.C
+		}
+
+		timer.Reset(time.Duration(timeout) * time.Second)
 
 		select {
 		case <-srv.shutdown:
 			srv.LogInfo("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String())
 			return
-		case <-timer:
+		case <-timer.C:
 			srv.LogInfo(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()))
 		default:
 		}
