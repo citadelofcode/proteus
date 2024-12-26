@@ -16,7 +16,7 @@ var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) erro
 		return err
 	}
 
-	if isCondGet {
+	if !isCondGet {
 		response.Status(StatusOK)
 		return response.SendFile(targetFilePath, false)
 	} else {

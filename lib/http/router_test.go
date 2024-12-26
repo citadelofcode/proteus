@@ -50,7 +50,7 @@ func Test_Router_AddStaticRoute(t *testing.T) {
 		ExpectedErr string
 	} {
 		{ "Valid route with valid target folder path", "GET", "/files/static", "/Users/maheshkumaarbalaji/Projects/proteus/Files/", "" },
-		{ "Valid route with a target file path", "GET", "/files/staticone", "/Users/maheshkumaarbalaji/Projects/proteus/Files/index.html", "RoutingError" },
+		{ "Valid route with a target file path", "GET", "/files/staticone", "/Users/maheshkumaarbalaji/Projects/proteus/Files/home.html", "RoutingError" },
 		{ "Valid route with a relative target path", "GET", "/files/statictwo", "./../proteus/Files/", "RoutingError" },
 	}
 

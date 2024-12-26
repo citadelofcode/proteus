@@ -20,7 +20,8 @@ func main() {
 	server.Static("/files", TargetDirectory)
 	server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
 		names, _ := req.Segments.Get("name")
-		fmt.Printf("The name value in the path is %s\n", strings.Join(names, ","))
+		server.LogInfo(fmt.Sprintf("The name value in the path is %s\n", strings.Join(names, ",")))
+		res.AddHeader("Content-Type", "text/plain")
 		res.Status(http.StatusOK)
 		res.Send("The name parameter value received is: " + strings.Join(names, ", "))
 		return nil

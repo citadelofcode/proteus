@@ -44,8 +44,8 @@ func (req *HttpRequest) initialize() {
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.staticFilePath = ""
-	req.Query = nil
-	req.Segments = nil
+	req.Query = make(Params)
+	req.Segments = make(Params)
 }
 
 // Assigns the stream reader field of HttpRequest with a valid request stream.
@@ -96,7 +96,7 @@ func (req *HttpRequest) readHeader() error {
 				reqError.Value = strings.TrimSpace(message)
 				return reqError
 			} else if len(message) == 0 && err == io.EOF {
-				break
+				return err
 			}			
 		}
 
@@ -183,7 +183,6 @@ func (req *HttpRequest) readBody() error {
 // Parses all the query paramaters from the request URL and stores in the HttpRequest instance. 
 // Once the parsing is done, it removes the query parameters string from the Resource Path field.
 func (req *HttpRequest) parseQueryParams() error {
-	req.Query = make(Params)
 	parsedUrl, err := url.Parse(req.ResourcePath)
 	if err != nil {
 		reqError := new(RequestParseError)
@@ -211,9 +210,9 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 		return false, nil
 	}
 
-	fileMediaType, exists := getContentType(CompleteFilePath)
-	if !exists {
-		return false, nil
+	fileMediaType, err := getContentType(CompleteFilePath)
+	if err != nil {
+		return false, err
 	}
 
 	file, err := fs.GetFile(CompleteFilePath, fileMediaType, true)
