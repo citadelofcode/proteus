@@ -25,6 +25,7 @@ func getContentType(CompleteFilePath string) (string, error) {
 		fileExtension := filepath.Ext(CompleteFilePath)
 		fileExtension = strings.TrimSpace(fileExtension)
 		fileExtension = strings.ToLower(fileExtension)
+		fileExtension = strings.TrimLeft(fileExtension, ".")
 		contentType, exists := AllowedContentTypes[fileExtension]
 		if exists {
 			return contentType, nil

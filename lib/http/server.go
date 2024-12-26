@@ -157,13 +157,18 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 
 		httpResponse := newResponse(ClientConnection, httpRequest)
 		var timeout int
+		var max int
 		connValue, ok := httpRequest.Headers.Get("Connection")
 		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
 			currCount := srv.cw.GetCount()
-			timeout, max := srv.getKeepAliveHeuristic(currCount)
+			timeout, max = srv.getKeepAliveHeuristic(currCount)
 			srv.LogInfo(fmt.Sprintf("The timeout value returned by heuristic is %d seconds for active connection count %d", timeout, currCount))
-			ClientConnection.(*net.TCPConn).SetKeepAlive(true)
-			ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+			tcpConn, ok := ClientConnection.(*net.TCPConn)
+			if ok {
+				tcpConn.SetKeepAlive(true)
+				tcpConn.SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+			}
+			
 			httpResponse.Headers.Add("Connection", "keep-alive")
 			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
 		}
