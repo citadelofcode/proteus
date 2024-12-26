@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"net"
 	"os"
@@ -97,7 +98,6 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	}
 
 	srv.Socket = server
-	defer srv.Socket.Close()
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
@@ -111,16 +111,14 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 	srv.wg.Add(1)
 	go srv.acceptConnections()
 	<-sigChan
-	srv.LogInfo("Server shutdown signal received...")
-	close(srv.shutdown)
-	srv.LogInfo("Server Shutdown initiated :: All existing connections are being terminated.")
-	srv.wg.Wait()
-	srv.LogInfo("All existing connections have been terminated. Shutting down server now...")
+	srv.terminate()
+	close(sigChan)
 }
 
 // Accepts incoming connections and creates seperate goroutines for each new client.
 func (srv *HttpServer) acceptConnections() {
 	defer srv.wg.Done()
+	
 	for {
 		select {
 		case <-srv.shutdown:
@@ -147,12 +145,14 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer srv.cw.UpdateCount(-1)
 	defer ClientConnection.Close()
 
-	handleRequest := func() int {
+	handleRequest := func() (int, error) {
 		httpRequest := newRequest(ClientConnection)
 		err := httpRequest.read()
 		if err != nil {
-			srv.LogError(err.Error())
-			return 0
+			if err != io.EOF {
+				srv.LogError(err.Error())
+			}
+			return 0, err
 		}
 
 		httpResponse := newResponse(ClientConnection, httpRequest)
@@ -161,6 +161,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
 			currCount := srv.cw.GetCount()
 			timeout, max := srv.getKeepAliveHeuristic(currCount)
+			srv.LogInfo(fmt.Sprintf("The timeout value returned by heuristic is %d seconds for active connection count %d", timeout, currCount))
 			ClientConnection.(*net.TCPConn).SetKeepAlive(true)
 			ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
 			httpResponse.Headers.Add("Connection", "keep-alive")
@@ -191,19 +192,17 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 
 		srv.Log(httpRequest, httpResponse)
-		return timeout
+		return timeout, nil
 	}
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
 	for {
-		timeout := handleRequest()
-		if !timer.Stop() {
-			<-timer.C
+		if timeout, err := handleRequest(); err != io.EOF {
+			timer.Reset(time.Duration(timeout) * time.Second)
+			srv.LogInfo(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout))
 		}
-
-		timer.Reset(time.Duration(timeout) * time.Second)
 
 		select {
 		case <-srv.shutdown:
@@ -211,6 +210,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			return
 		case <-timer.C:
 			srv.LogInfo(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()))
+			return
 		default:
 		}
 	}
@@ -222,6 +222,28 @@ func (srv *HttpServer) getKeepAliveHeuristic(connCount int) (int, int) {
 	scalingFactor := 2.0
 	timeout := 15 / (1 + math.Exp(scalingFactor * float64(connCount - usableCPU)))
 	return int(math.Ceil(timeout)), 100
+}
+
+// Terminate all the active connections with the server before shutting down the server instance.
+func (srv *HttpServer) terminate() {
+	srv.LogInfo("Server shutdown signal received...")
+	terminateDone := make(chan struct{})
+	go func () {
+		srv.LogInfo("Server Shutdown :: All existing connections are being terminated.")
+		close(srv.shutdown)
+		srv.wg.Wait()
+		srv.Socket.Close()
+		close(terminateDone)
+	}()
+
+	select {
+	case <-terminateDone:
+		srv.LogInfo("Server Shutdown :: All active connections have been terminated successfully.")
+		return
+	case <-time.After(time.Duration(60) * time.Second):
+		srv.LogInfo("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.")
+		os.Exit(0)
+	}
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.

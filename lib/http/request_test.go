@@ -1,9 +1,10 @@
 package http
 
 import (
-	"testing"
-	"strings"
 	"bufio"
+	"io"
+	"strings"
+	"testing"
 )
 
 // Helper function to create and return a new test instance of HttpRequest.
@@ -36,7 +37,7 @@ func Test_Request_Read(t *testing.T) {
 			stringReader := strings.NewReader(testCase.InputRequest)
 			testReq.setReader(bufio.NewReader(stringReader))
 			err := testReq.read()
-			if err != nil {
+			if err != nil && err != io.EOF {
 				tt.Errorf("The given request could not be parsed. Error :: %s", err.Error())
 				return
 			}

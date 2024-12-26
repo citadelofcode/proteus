@@ -14,7 +14,7 @@ func Test_GetPathType(t *testing.T) {
 		ExpectedErrorType string
 	} {
 		{ "Path pointing to a folder", "/Users/maheshkumaarbalaji/Downloads", FOLDER_TYPE_PATH, "" },
-		{ "Path pointing to a file", "/Users/maheshkumaarbalaji/Projects/proteus/Files/index.html", FILE_TYPE_PATH, "" },
+		{ "Path pointing to a file", "/Users/maheshkumaarbalaji/Projects/proteus/Files/home.html", FILE_TYPE_PATH, "" },
 		{ "Path pointing to neither a file nor a folder", "https://www.google.com", "", "FileSystemError" },
 	}
 

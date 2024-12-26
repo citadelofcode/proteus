@@ -9,13 +9,11 @@ This is my solution to the challenge available at [Coding Challenges](https://co
 To build and run the project, execute the following commands on the project's root directory.
 
 ```bash
-# Below command builds the project and generates the output executable file.
-# The name of the executable file is main.out by default. 
-# If you want a different name, you can run the build command with the -o flag.
-go build -o proteus.out
+# The below command makes the bash script file as an executable.
+chmod +x ./run.sh
 
-# Below command runs the executable file.
-./proteus.out
+# Below command runs the shell script that compiles and runs the server
+./run.sh
 ```
 
 ## Example Usage
@@ -51,10 +49,14 @@ To declare a custom route and its associated handler function, refer to the foll
 ```go
 server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
     names, _ := req.Segments.Get("name")
-    fmt.Printf("The name value in the path is %s\n", strings.Join(names, ","))
+    server.LogInfo(fmt.Sprintf("The name value in the path is %s\n", strings.Join(names, ",")))
+    res.Status(http.StatusOK)
+    res.Send("The name parameter value received is: " + strings.Join(names, ", "))
     return nil
 })
 ```
+
+The handler function must accept two parameters - pointer to a HttpRequest and pointer to a HttpResponse instance. It must return an error.
 
 ## Testing
 

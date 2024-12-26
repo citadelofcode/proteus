@@ -15,22 +15,28 @@ import (
 )
 
 // Returns the file media type for the given file path.
-func getContentType(CompleteFilePath string) (string, bool) {
+func getContentType(CompleteFilePath string) (string, error) {
 	pathType, err := fs.GetPathType(CompleteFilePath)
-	if err == nil {
-		if pathType == fs.FILE_TYPE_PATH {
-			fileExtension := filepath.Ext(CompleteFilePath)
-			fileExtension = strings.TrimSpace(fileExtension)
-			fileExtension = strings.ToLower(fileExtension)
-			contentType, exists := AllowedContentTypes[fileExtension]
-			if exists {
-				return contentType, exists
-			} else {
-				return strings.TrimSpace(ServerDefaults["content_type"]), true
-			}
+	if err != nil {
+		return "", err
+	}
+	
+	if pathType == fs.FILE_TYPE_PATH {
+		fileExtension := filepath.Ext(CompleteFilePath)
+		fileExtension = strings.TrimSpace(fileExtension)
+		fileExtension = strings.ToLower(fileExtension)
+		contentType, exists := AllowedContentTypes[fileExtension]
+		if exists {
+			return contentType, nil
+		} else {
+			return strings.TrimSpace(ServerDefaults["content_type"]), nil
 		}
 	}
-	return "", false
+
+	nfErr := new(fs.FileSystemError)
+	nfErr.TargetPath = CompleteFilePath
+	nfErr.Message = "Given path does not point to a file"
+	return "", nfErr
 }
 
 // Returns the default port number from the list of default configuration values.

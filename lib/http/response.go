@@ -203,7 +203,7 @@ func (res *HttpResponse) writeBody() error {
 			if err != nil {
 				resErr := new(ResponseError)
 				resErr.Section = "Body"
-				resErr.Value = "Content type Not Available"
+				resErr.Value = "Body Write without Content Type"
 				resErr.Message = fmt.Sprintf("Error while writing response body :: %s", err.Error())
 				return resErr
 			}
@@ -241,25 +241,27 @@ func (res *HttpResponse) Status(status StatusCode) {
 
 // Send the given file from the local file system as the HTTP response.
 func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) error {
-	fileMediaType, exists := getContentType(CompleteFilePath)
-	if exists {
-		file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
-		if err == nil {
-			res.Headers.Add("Content-Type", fileMediaType)
-			res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
-			res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
-			if !OnlyMetadata {
-				res.Body = file.Contents
-			}
-			
-			err := res.write()
-			if err != nil {
-				return err
-			}
+	fileMediaType, ok := res.Headers.Get("Content-Type")
+	if !ok {
+		fileMediaType, err := getContentType(CompleteFilePath)
+		if err != nil {
+			return err
 		}
+		res.Headers.Add("Content-Type", fileMediaType)
 	}
 
-	return nil
+	file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
+	if err != nil {
+		return err
+	} 
+
+	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
+	res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
+	if !OnlyMetadata {
+		res.Body = file.Contents
+	}
+	
+	return res.write()
 }
 
 // Sends a the given error content as response back to the client.
@@ -268,21 +270,20 @@ func (res *HttpResponse) SendError(Content string) error {
 	res.Headers.Add("Content-Type", ERROR_MSG_CONTENT_TYPE)
 	res.Headers.Add("Content-Length", strconv.Itoa(len(responseContent)))
 	res.Body = responseContent
-	err := res.write()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return res.write()
 }
 
 // Send the given string as response back to the client.
 func (res *HttpResponse) Send(content string) error {
+	_, ok := res.Headers.Get("Content-Type")
+	if !ok {
+		fileMediaType := getServerDefaults("Content_Type")
+		res.Headers.Add("Content-Type", fileMediaType)
+	}
+
 	content = strings.TrimSpace(content)
 	contentBuffer := []byte(content)
-	res.Headers.Add("Content-Type", "text/plain")
 	res.Headers.Add("Content-Length", strconv.Itoa(len(contentBuffer)))
 	res.Body = contentBuffer
-	err := res.write()
-	return err
+	return res.write()
 }
