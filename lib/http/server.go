@@ -26,7 +26,7 @@ type ConnectionWatcher struct {
 	connCount int
 }
 
-// Updates the connection count by increasing by given delta.
+// Increases the connection count by the specified delta.
 func (cw *ConnectionWatcher) UpdateCount(delta int) {
 	cw.mu.Lock()
 	cw.connCount += delta
@@ -47,8 +47,8 @@ type HttpServer struct {
 	HostAddress string
 	// Port number where web server instance is listening for incoming requests.
 	PortNumber int
-	// Server socket created and bound to the port number.
-	Socket net.Listener
+	// Listener created and bound to the host address and port number.
+	listener net.Listener
 	// Router instance that contains all the routes and their associated handlers.
 	innerRouter *Router
 	// Logger instance associated with the Server instance.
@@ -59,6 +59,27 @@ type HttpServer struct {
 	shutdown chan struct{}
 	// Instance of ConnectionWatcher.
 	cw *ConnectionWatcher
+	// Flag to determine if the listener is closed.
+	listClosed bool
+	// Mutex to manage read-write activities on the listClosed flag.
+	limu sync.RWMutex
+}
+
+// Function that closes the server listener and marks the listClosed flag as closed.
+func (srv *HttpServer) close() {
+	srv.limu.Lock()
+	srv.listClosed = true
+	srv.limu.Unlock()
+	srv.listener.Close()
+}
+
+// Returns true if the server listener is already closed and false, otherwise.
+func (srv *HttpServer) isClosed() bool {
+	isClose := false
+	srv.limu.RLock()
+	isClose = srv.listClosed
+	srv.limu.RUnlock()
+	return isClose
 }
 
 // Define a static route and map to a static file or folder in the file system.
@@ -97,7 +118,7 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 		return
 	}
 
-	srv.Socket = server
+	srv.listener = server
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
@@ -125,9 +146,11 @@ func (srv *HttpServer) acceptConnections() {
 			srv.LogInfo("Server Shutdown initiated :: No new connections will be accepted from now.")
 			return
 		default:
-			clientConnection, err := srv.Socket.Accept()
+			clientConnection, err := srv.listener.Accept()
 			if err != nil {
-				srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+				if !srv.isClosed() {
+					srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+				}
 				continue
 			}
 
@@ -149,21 +172,30 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpRequest := newRequest(ClientConnection)
 		err := httpRequest.read()
 		if err != nil {
-			if err != io.EOF {
+			_, ok := err.(*ReadTimeoutError)
+			if err != io.EOF && !ok {
 				srv.LogError(err.Error())
 			}
+			
 			return 0, err
 		}
 
+		srv.LogInfo(fmt.Sprintf("Client [%s] :: New Request :: %s %s HTTP/%s", ClientConnection.RemoteAddr().String(), httpRequest.Method, httpRequest.ResourcePath, httpRequest.Version))
 		httpResponse := newResponse(ClientConnection, httpRequest)
 		var timeout int
+		var max int
 		connValue, ok := httpRequest.Headers.Get("Connection")
 		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
 			currCount := srv.cw.GetCount()
-			timeout, max := srv.getKeepAliveHeuristic(currCount)
+			timeout, max = srv.getKeepAliveHeuristic(currCount)
 			srv.LogInfo(fmt.Sprintf("The timeout value returned by heuristic is %d seconds for active connection count %d", timeout, currCount))
-			ClientConnection.(*net.TCPConn).SetKeepAlive(true)
-			ClientConnection.(*net.TCPConn).SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+			tcpConn, ok := ClientConnection.(*net.TCPConn)
+			if ok {
+				tcpConn.SetKeepAlive(true)
+				tcpConn.SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+				tcpConn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
+			}
+			
 			httpResponse.Headers.Add("Connection", "keep-alive")
 			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
 		}
@@ -199,7 +231,12 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer timer.Stop()
 
 	for {
-		if timeout, err := handleRequest(); err != io.EOF {
+		timeout, err := handleRequest();
+		_, ok := err.(*ReadTimeoutError)
+		if err != io.EOF && !ok {
+			if !timer.Stop() {
+				<-timer.C
+			}
 			timer.Reset(time.Duration(timeout) * time.Second)
 			srv.LogInfo(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout))
 		}
@@ -231,18 +268,20 @@ func (srv *HttpServer) terminate() {
 	go func () {
 		srv.LogInfo("Server Shutdown :: All existing connections are being terminated.")
 		close(srv.shutdown)
+		srv.close()
 		srv.wg.Wait()
-		srv.Socket.Close()
 		close(terminateDone)
 	}()
+
+	srvShutTimeout := getSrvShutdownTimout()
 
 	select {
 	case <-terminateDone:
 		srv.LogInfo("Server Shutdown :: All active connections have been terminated successfully.")
 		return
-	case <-time.After(time.Duration(60) * time.Second):
+	case <-time.After(time.Duration(srvShutTimeout) * time.Second):
 		srv.LogInfo("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.")
-		os.Exit(0)
+		return
 	}
 }
 

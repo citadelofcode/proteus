@@ -70,7 +70,8 @@
         "hostname": "localhost",
         "port": "8080",
         "server_name": "proteus",
-        "content_type": "application/octet-stream"
+        "content_type": "application/octet-stream",
+        "shutdown_timeout": "60"
     },
     "date_headers": ["Date", "Expires", "If-Modified-Since", "Last-Modified"],
     "status_codes": [{

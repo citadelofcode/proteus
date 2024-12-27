@@ -25,6 +25,7 @@ func getContentType(CompleteFilePath string) (string, error) {
 		fileExtension := filepath.Ext(CompleteFilePath)
 		fileExtension = strings.TrimSpace(fileExtension)
 		fileExtension = strings.ToLower(fileExtension)
+		fileExtension = strings.TrimLeft(fileExtension, ".")
 		contentType, exists := AllowedContentTypes[fileExtension]
 		if exists {
 			return contentType, nil
@@ -41,14 +42,24 @@ func getContentType(CompleteFilePath string) (string, error) {
 
 // Returns the default port number from the list of default configuration values.
 func getDefaultPort() int {
-	portNumberValue := ServerDefaults["port"]
-	portNumber, _ := strconv.Atoi(portNumberValue)
+	value := ServerDefaults["port"]
+	value = strings.TrimSpace(value)
+	portNumber, _ := strconv.Atoi(value)
 	return portNumber
+}
+
+// Returns the server shutdown timeout value (in seconds) from the configuration file.
+func getSrvShutdownTimout() int {
+	value := ServerDefaults["shutdown_timeout"]
+	value = strings.TrimSpace(value)
+	timeout, _ := strconv.Atoi(value)
+	return timeout
 }
 
 // Returns the value for the given key from server default configuration values.
 func getServerDefaults(key string) string {
-	value := ServerDefaults[strings.TrimSpace(key)]
+	key = strings.TrimSpace(key)
+	value := ServerDefaults[key]
 	value = strings.TrimSpace(value)
 	return value
 }

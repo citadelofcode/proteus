@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net"
 	"net/textproto"
 	"net/url"
 	"slices"
@@ -69,7 +70,11 @@ func (req *HttpRequest) read() error {
 	if ok {
 		req.ContentLength, err = strconv.Atoi(clength)
 		if err != nil {
-			return err
+			reqError := new(RequestParseError)
+			reqError.Section = "Header"
+			reqError.Message = err.Error()
+			reqError.Value = fmt.Sprintf("Content Length parsing error for value - %s", strings.TrimSpace(clength))
+			return reqError
 		}
 
 		err = req.readBody()
@@ -89,7 +94,9 @@ func (req *HttpRequest) readHeader() error {
 	for {
 		message, err := req.reader.ReadString('\n')
 		if err != nil {
-			if len(message) == 0 && err != io.EOF {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				return &ReadTimeoutError{}
+			} else if len(message) == 0 && err != io.EOF {
 				reqError := new(RequestParseError)
 				reqError.Section = "Header"
 				reqError.Message = err.Error()
@@ -166,7 +173,9 @@ func (req *HttpRequest) readBody() error {
 		req.Body = make([]byte, req.ContentLength)
 		for index := 0; index < req.ContentLength; index++ {
 			bodyByte, err := req.reader.ReadByte()
-			if err != nil {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				return &ReadTimeoutError{}
+			} else if err != nil {
 				reqError := new(RequestParseError)
 				reqError.Section = "Body"
 				reqError.Value = "Request Body"
