@@ -46,3 +46,11 @@ type ResponseError struct {
 func (resErr ResponseError) Error() string {
 	return fmt.Sprintf("ResponseError :: Section: (%s) :: Value: (%s) :: %s", resErr.Section, resErr.Value, resErr.Message)
 }
+
+// Custom error to track read timeout errors raised on incoming TCP Connections
+type ReadTimeoutError struct {}
+
+// Error message associated with the read timeout error raised for the underlying TCP connection.
+func (rte *ReadTimeoutError) Error() string {
+	return "Read timeout error occurred on the underlying TCP Connection."
+}

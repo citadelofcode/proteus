@@ -149,12 +149,15 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		httpRequest := newRequest(ClientConnection)
 		err := httpRequest.read()
 		if err != nil {
-			if err != io.EOF {
+			_, ok := err.(*ReadTimeoutError)
+			if err != io.EOF && !ok {
 				srv.LogError(err.Error())
 			}
+			
 			return 0, err
 		}
 
+		srv.LogInfo(fmt.Sprintf("Client [%s] :: New Request :: %s %s HTTP/%s", ClientConnection.RemoteAddr().String(), httpRequest.Method, httpRequest.ResourcePath, httpRequest.Version))
 		httpResponse := newResponse(ClientConnection, httpRequest)
 		var timeout int
 		var max int
@@ -167,6 +170,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			if ok {
 				tcpConn.SetKeepAlive(true)
 				tcpConn.SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
+				tcpConn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 			}
 			
 			httpResponse.Headers.Add("Connection", "keep-alive")
@@ -204,7 +208,12 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer timer.Stop()
 
 	for {
-		if timeout, err := handleRequest(); err != io.EOF {
+		timeout, err := handleRequest();
+		_, ok := err.(*ReadTimeoutError)
+		if err != io.EOF && !ok {
+			if !timer.Stop() {
+				<-timer.C
+			}
 			timer.Reset(time.Duration(timeout) * time.Second)
 			srv.LogInfo(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout))
 		}
@@ -241,11 +250,13 @@ func (srv *HttpServer) terminate() {
 		close(terminateDone)
 	}()
 
+	srvShutTimeout := getSrvShutdownTimout()
+
 	select {
 	case <-terminateDone:
 		srv.LogInfo("Server Shutdown :: All active connections have been terminated successfully.")
 		return
-	case <-time.After(time.Duration(60) * time.Second):
+	case <-time.After(time.Duration(srvShutTimeout) * time.Second):
 		srv.LogInfo("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.")
 		os.Exit(0)
 	}
