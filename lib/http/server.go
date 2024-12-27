@@ -26,7 +26,7 @@ type ConnectionWatcher struct {
 	connCount int
 }
 
-// Updates the connection count by increasing by given delta.
+// Increases the connection count by the specified delta.
 func (cw *ConnectionWatcher) UpdateCount(delta int) {
 	cw.mu.Lock()
 	cw.connCount += delta
@@ -47,8 +47,8 @@ type HttpServer struct {
 	HostAddress string
 	// Port number where web server instance is listening for incoming requests.
 	PortNumber int
-	// Server socket created and bound to the port number.
-	Socket net.Listener
+	// Listener created and bound to the host address and port number.
+	listener net.Listener
 	// Router instance that contains all the routes and their associated handlers.
 	innerRouter *Router
 	// Logger instance associated with the Server instance.
@@ -59,6 +59,27 @@ type HttpServer struct {
 	shutdown chan struct{}
 	// Instance of ConnectionWatcher.
 	cw *ConnectionWatcher
+	// Flag to determine if the listener is closed.
+	listClosed bool
+	// Mutex to manage read-write activities on the listClosed flag.
+	limu sync.RWMutex
+}
+
+// Function that closes the server listener and marks the listClosed flag as closed.
+func (srv *HttpServer) close() {
+	srv.limu.Lock()
+	srv.listClosed = true
+	srv.limu.Unlock()
+	srv.listener.Close()
+}
+
+// Returns true if the server listener is already closed and false, otherwise.
+func (srv *HttpServer) isClosed() bool {
+	isClose := false
+	srv.limu.RLock()
+	isClose = srv.listClosed
+	srv.limu.RUnlock()
+	return isClose
 }
 
 // Define a static route and map to a static file or folder in the file system.
@@ -97,7 +118,7 @@ func (srv * HttpServer) Listen(PortNumber int, HostAddress string) {
 		return
 	}
 
-	srv.Socket = server
+	srv.listener = server
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
@@ -125,9 +146,11 @@ func (srv *HttpServer) acceptConnections() {
 			srv.LogInfo("Server Shutdown initiated :: No new connections will be accepted from now.")
 			return
 		default:
-			clientConnection, err := srv.Socket.Accept()
+			clientConnection, err := srv.listener.Accept()
 			if err != nil {
-				srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+				if !srv.isClosed() {
+					srv.LogError(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()))
+				}
 				continue
 			}
 
@@ -245,8 +268,8 @@ func (srv *HttpServer) terminate() {
 	go func () {
 		srv.LogInfo("Server Shutdown :: All existing connections are being terminated.")
 		close(srv.shutdown)
+		srv.close()
 		srv.wg.Wait()
-		srv.Socket.Close()
 		close(terminateDone)
 	}()
 
@@ -258,7 +281,7 @@ func (srv *HttpServer) terminate() {
 		return
 	case <-time.After(time.Duration(srvShutTimeout) * time.Second):
 		srv.LogInfo("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.")
-		os.Exit(0)
+		return
 	}
 }
 
