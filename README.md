@@ -16,6 +16,18 @@ chmod +x ./run.sh
 ./run.sh
 ```
 
+## Testing
+
+To run all the test scripts available in the module, execute the following commands.
+
+```bash
+# Below command gives executable permissions to the shell script file.
+chmod +x ./test.sh
+
+# Execute the shell script to run the test cases.
+./test.sh
+```
+
 ## Example Usage
 
 To work with creating a HTTP server and process incoming requests, add the below import statement at the top of your Go file.
@@ -57,25 +69,6 @@ server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) er
 ```
 
 The handler function must accept two parameters - pointer to a HttpRequest and pointer to a HttpResponse instance. It must return an error.
-
-## Testing
-
-Each package in the module contains unit test scripts which can be identified by the "_test.go" suffix present in the files. To run all test scripts in the module, execute the following command.
-
-```bash
-go test ./lib/... -v -cover
-```
-
-- The **-v** command line option enables the verbose logs to be printed as the test scripts are being executed.
-- The **-cover** command line option displays the code coverage information for the test cases executed.
-
-To run test cases for a specific package, run the following command.
-
-```bash
-go test ./lib/http -v -cover
-```
-
-This command runs the test cases defined for the entire `http` package. To run for a package of your choice, replace `http` with the name of the package for which you want to run the test cases.
 
 ## HTTP Version Compatibility
 

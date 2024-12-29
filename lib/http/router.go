@@ -29,8 +29,8 @@ type Router struct {
 	Routes []Route
 	// Contains the last sequence number generated for a route defined for the router.
 	LastSequenceNumber int
-	// Contains the prefix tree representation of all the routes
-	RouteTree *routeTreeNode
+	// Prefix tree containing all the routes declared on the router.
+	RouteTree *prefixTreeNode
 }
 
 // Validates if a given route path is syntactically correct.
@@ -125,25 +125,25 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 	routePath := request.ResourcePath
 	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
-	if routeInfo.RoutePath == "" {
+	if routeInfo.routePath == "" {
 		reError := new(RoutingError)
 		reError.RoutePath = routePath
-		reError.Message = "matchRoute: A match was not found in the router route tree"
+		reError.Message = "matchRoute: A match was not found in the router prefix tree"
 		return nil, reError
 	}
 
-	if routeInfo.Segments.Length() > 0 {
-		for key, values := range routeInfo.Segments {
+	if routeInfo.segments.Length() > 0 {
+		for key, values := range routeInfo.segments {
 			request.Segments.Add(key, values)
 		}
 	}
 
 	var handler Handler
 	for _, route := range rtr.Routes {
-		if strings.EqualFold(routeInfo.RoutePath, route.RoutePath) {
+		if strings.EqualFold(routeInfo.routePath, route.RoutePath) {
 			handler = route.RouteHandler
 			if route.IsStatic {
-				request.staticFilePath = strings.Replace(request.ResourcePath, routeInfo.RoutePath, route.StaticFolderPath, 1)
+				request.staticFilePath = strings.Replace(request.ResourcePath, routeInfo.routePath, route.StaticFolderPath, 1)
 			}
 			break
 		}
