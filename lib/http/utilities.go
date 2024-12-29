@@ -187,10 +187,13 @@ func isHttpDate(value string) (bool, time.Time) {
 // Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.
 func cleanRoute(RoutePath string) string {
 	RoutePath = strings.TrimSpace(RoutePath)
-	RoutePath = strings.ToLower(RoutePath)
-	RoutePath = strings.TrimRight(RoutePath, "/")
-	RoutePath = strings.TrimLeft(RoutePath, "/")
-	RoutePath = "/" + RoutePath
+	if RoutePath != "" {
+		RoutePath = strings.ToLower(RoutePath)
+		RoutePath = strings.TrimRight(RoutePath, "/")
+		RoutePath = strings.TrimLeft(RoutePath, "/")
+		RoutePath = "/" + RoutePath
+	}
+
 	return RoutePath
 }
 

@@ -38,13 +38,13 @@ func Test_RoutePathNormalization(t *testing.T) {
 // Test case to validate if an empty route tree is being created correctly.
 func Test_RouteTree_Create(t *testing.T) {
 	root := createTree()
-	if root.RoutePart != "" {
+	if root.value != "" {
 		t.Errorf("The route part for the root node of the route tree is expected to be an empty string")
 	} else {
 		t.Logf("The route part for the root node is an empty string as expected for a route tree")
 	}
 
-	if len(root.Children) > 0 {
+	if len(root.children) > 0 {
 		t.Errorf("The root node for an empty route tree cannot have child nodes")
 	} else {
 		t.Logf("The root node does not have any children as expected for an empty route tree")
@@ -104,21 +104,22 @@ func Test_RouteTree_MatchRoute(t *testing.T) {
 		{ "Request Route Path with no path parameters", "/users/list-all", "/users/list-all", 0 },
 		{ "Request Route Path with a single path parameter", "/users/6/get_name", "/users/:userId/get_name", 1 },
 		{ "Request route for a static resource", "/files/static/proteus/index.html", "/files/static", 0 },
+		{ "Request route without a match in the prefix tree", "/favicon.ico", "", 0 },
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			matchInfo := matchRouteInTree(root, testCase.RequestRoute)
-			if !strings.EqualFold(testCase.MappedRoute, matchInfo.RoutePath) {
-				tt.Errorf("The matched route [%s] returned does not match the expected route path [%s]", matchInfo.RoutePath, testCase.MappedRoute)
+			if !strings.EqualFold(testCase.MappedRoute, matchInfo.routePath) {
+				tt.Errorf("The matched route [%s] returned does not match the expected route path [%s]", matchInfo.routePath, testCase.MappedRoute)
 			} else {
-				tt.Logf("The matched route [%s] returned matches the expected route path [%s]", matchInfo.RoutePath, testCase.MappedRoute)
+				tt.Logf("The matched route [%s] returned matches the expected route path [%s]", matchInfo.routePath, testCase.MappedRoute)
 			}
 
-			if len(matchInfo.Segments) != testCase.PathParamCount {
-				tt.Errorf("The number of path parameters returned (%d) does not match the expected parameter count (%d).", matchInfo.Segments.Length(), testCase.PathParamCount)
+			if len(matchInfo.segments) != testCase.PathParamCount {
+				tt.Errorf("The number of path parameters returned (%d) does not match the expected parameter count (%d).", matchInfo.segments.Length(), testCase.PathParamCount)
 			} else {
-				tt.Logf("The number of path parameters returned (%d) matches the expected parameter count (%d).", matchInfo.Segments.Length(), testCase.PathParamCount)
+				tt.Logf("The number of path parameters returned (%d) matches the expected parameter count (%d).", matchInfo.segments.Length(), testCase.PathParamCount)
 			}
 		})
 	}
