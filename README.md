@@ -1,6 +1,6 @@
 # Proteus
 
-<img src="https://d18b2p1qeig31f.cloudfront.net/project-proteus.jpeg" style="border-radius:50%" align="right" width="159px" alt="Proteus logo">
+<img src="https://58f2c229.citadelofcode.pages.dev/logos/proteus.jpeg" style="border-radius:50%" align="right" width="159px" alt="Proteus logo">
 
 Proteus is a versatile web server framework written using Go. 
 
