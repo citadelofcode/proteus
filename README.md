@@ -1,10 +1,8 @@
 # Proteus
 
-<img src="https://f27c53a3.citadelofcode.pages.dev/logos/proteus.png" style="border-radius:50%" align="right" width="159px" alt="Proteus logo">
+<img src="https://static.citadelofcode.com/proteus/logo.png" style="border-radius:50%" align="right" width="159px" alt="Proteus logo">
 
-Proteus is a versatile web server framework written using Go. 
-
-This is my solution to the challenge available at [Coding Challenges](https://codingchallenges.fyi/challenges/challenge-webserver) to create my own web server.
+Proteus is a versatile web server framework written using Go.
 
 ## Running the project
 
