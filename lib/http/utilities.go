@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/mkbworks/proteus/lib/fs"
+	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Returns the file media type for the given file path.
@@ -20,7 +20,7 @@ func getContentType(CompleteFilePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	if pathType == fs.FILE_TYPE_PATH {
 		fileExtension := filepath.Ext(CompleteFilePath)
 		fileExtension = strings.TrimSpace(fileExtension)

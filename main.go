@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/mkbworks/proteus/lib/http"
+	"github.com/citadelofcode/proteus/lib/http"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		fmt.Println("Error occurred while getting current working directory: " + err.Error())
 		os.Exit(1)
 	}
-	
+
 	TargetDirectory := filepath.Join(CurrentDirectory, "Files")
 	server.Static("/files", TargetDirectory)
 	server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
@@ -26,6 +26,6 @@ func main() {
 		res.Send("The name parameter value received is: " + strings.Join(names, ", "))
 		return nil
 	})
-	
+
 	server.Listen(8080, "localhost")
 }

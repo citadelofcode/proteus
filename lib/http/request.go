@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"github.com/mkbworks/proteus/lib/fs"
+	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Structure to represent a HTTP request received by the web server.
@@ -39,7 +39,7 @@ type HttpRequest struct {
 	ClientAddress string
 }
 
-// Initializes the instance of HttpRequest with default values for all its fields. 
+// Initializes the instance of HttpRequest with default values for all its fields.
 func (req *HttpRequest) initialize() {
 	req.Body = make([]byte, 0)
 	req.Headers = make(Headers)
@@ -104,7 +104,7 @@ func (req *HttpRequest) readHeader() error {
 				return reqError
 			} else if len(message) == 0 && err == io.EOF {
 				return err
-			}			
+			}
 		}
 
 		message = strings.TrimSuffix(message, HEADER_LINE_SEPERATOR)
@@ -130,7 +130,7 @@ func (req *HttpRequest) readHeader() error {
 			if len(RequestLineParts) == 2 {
 				tempVersion = "HTTP/0.9"
 			}
-			
+
 			if len(RequestLineParts) == 3 {
 				tempVersion = strings.TrimSpace(RequestLineParts[2])
 			}
@@ -143,7 +143,7 @@ func (req *HttpRequest) readHeader() error {
 				reqError.Message = "Invalid HTTP Version found in header"
 				return reqError
 			}
-			req.Version = strings.TrimSpace(tempVersion) 
+			req.Version = strings.TrimSpace(tempVersion)
 			RequestLineProcessed = true
 		} else {
 			HeaderKey, HeaderValue, found := strings.Cut(message, HEADER_KEY_VALUE_SEPERATOR)
@@ -189,7 +189,7 @@ func (req *HttpRequest) readBody() error {
 	return nil
 }
 
-// Parses all the query paramaters from the request URL and stores in the HttpRequest instance. 
+// Parses all the query paramaters from the request URL and stores in the HttpRequest instance.
 // Once the parsing is done, it removes the query parameters string from the Resource Path field.
 func (req *HttpRequest) parseQueryParams() error {
 	parsedUrl, err := url.Parse(req.ResourcePath)
@@ -243,7 +243,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 		reqError.Message = "The given datetime string value must either conform to ANSIC or RFC 1123 format"
 		return false, reqError
 	}
-	
+
 	if file.LastModifiedAt.After(LastModifiedSince) {
 		return false, nil
 	}

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"fmt"
-	"github.com/mkbworks/proteus/lib/fs"
+	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Returns the configuration information imported from "config.json".

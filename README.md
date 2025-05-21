@@ -33,7 +33,7 @@ chmod +x ./test.sh
 To work with creating a HTTP server and process incoming requests, add the below import statement at the top of your Go file.
 
 ```go
-import "github.com/mkbworks/proteus/lib/http"
+import "github.com/citadelofcode/proteus/lib/http"
 ```
 
 Once the import statement is included, use the below statement to create a new instance of a web server to handle incoming HTTP requests.

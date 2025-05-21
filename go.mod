@@ -1,3 +1,3 @@
-module github.com/mkbworks/proteus
+module github.com/citadelofcode/proteus
 
 go 1.22.1

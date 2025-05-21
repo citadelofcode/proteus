@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"github.com/mkbworks/proteus/lib/fs"
+	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Structure to contain information about a single route declared in the Router.
@@ -43,7 +43,7 @@ func (rtr *Router) validateRoute(routePath string) bool {
 	if !isRouteValid {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -86,7 +86,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 		Method: Method,
 		RoutePath: RoutePath,
 	}
-	
+
 	rtr.Routes = append(rtr.Routes, routeObj)
 	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil
@@ -115,7 +115,7 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 		Method: Method,
 		RoutePath: RoutePath,
 	}
-	
+
 	rtr.Routes = append(rtr.Routes, routeObj)
 	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil

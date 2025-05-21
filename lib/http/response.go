@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/mkbworks/proteus/lib/fs"
+	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Structure to represent a response status code and its associated information.
@@ -66,7 +66,7 @@ func (res *HttpResponse) addGeneralHeaders() {
 	}
 }
 
-// Adds all the default response HTTP headers to the HttpResponse instance. 
+// Adds all the default response HTTP headers to the HttpResponse instance.
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addResponseHeaders() {
 	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
@@ -253,14 +253,14 @@ func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) er
 	file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
 	if err != nil {
 		return err
-	} 
+	}
 
 	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
 	res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
 	if !OnlyMetadata {
 		res.Body = file.Contents
 	}
-	
+
 	return res.write()
 }
 
