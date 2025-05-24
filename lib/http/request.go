@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Structure to represent a HTTP request received by the web server.
@@ -224,7 +223,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 		return false, err
 	}
 
-	file, err := fs.GetFile(CompleteFilePath, fileMediaType, true)
+	file, err := GetFile(CompleteFilePath, fileMediaType, true)
 	if err != nil {
 		return false, err
 	}

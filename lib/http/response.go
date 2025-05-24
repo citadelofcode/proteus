@@ -8,18 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/citadelofcode/proteus/lib/fs"
 )
-
-// Structure to represent a response status code and its associated information.
-type respStatus struct {
-	// HTTP response status code.
-	Code StatusCode
-	// Short message for the corresponding status code.
-	Message string
-	// Error description for error status codes (>=400).
-	ErrorDescription string
-}
 
 // Structure to represent a HTTP response sent back by the server to the client.
 type HttpResponse struct {
@@ -250,7 +239,7 @@ func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) er
 		res.Headers.Add("Content-Type", fileMediaType)
 	}
 
-	file, err := fs.GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
+	file, err := GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
 	if err != nil {
 		return err
 	}

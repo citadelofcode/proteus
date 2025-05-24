@@ -1,8 +1,10 @@
-package fs
+package http
 
 import (
 	"strings"
 	"testing"
+	"runtime"
+	"path/filepath"
 )
 
 // Test case to validate the working of the GetPathType() function to fetch the path type for a given file system path.
@@ -13,14 +15,20 @@ func Test_GetPathType(t *testing.T) {
 		ExpectedPathType string
 		ExpectedErrorType string
 	} {
-		{ "Path pointing to a folder", "/Users/maheshkumaarbalaji/Downloads", FOLDER_TYPE_PATH, "" },
-		{ "Path pointing to a file", "/Users/maheshkumaarbalaji/Projects/proteus/Files/home.html", FILE_TYPE_PATH, "" },
+		{ "Path pointing to a folder", "../assets", FOLDER_TYPE_PATH, "" },
+		{ "Path pointing to a file", "../assets/index.html", FILE_TYPE_PATH, "" },
 		{ "Path pointing to neither a file nor a folder", "https://www.google.com", "", "FileSystemError" },
 	}
+	_, CurrentFilePath, _, _ := runtime.Caller(0)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			PathType, err := GetPathType(testCase.testPath)
+			testCasePath := testCase.testPath
+			isAbsolutePath := filepath.IsAbs(testCasePath)
+			if !isAbsolutePath {
+				testCasePath = filepath.Join(filepath.Dir(CurrentFilePath), testCasePath)
+			}
+			PathType, err := GetPathType(testCasePath)
 			if testCase.ExpectedErrorType == "" {
 				if err != nil {
 					tt.Errorf("Was not expecting an error, and yet received one - %v", err)

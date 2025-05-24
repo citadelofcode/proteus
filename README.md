@@ -4,42 +4,29 @@
 
 Proteus is a versatile web server framework written using Go.
 
-## Running the project
-
-To build and run the project, execute the following commands on the project's root directory.
-
-```bash
-# The below command makes the bash script file as an executable.
-chmod +x ./run.sh
-
-# Below command runs the shell script that compiles and runs the server
-./run.sh
-```
-
 ## Testing
 
 To run all the test scripts available in the module, execute the following commands.
 
 ```bash
-# Below command gives executable permissions to the shell script file.
-chmod +x ./test.sh
-
-# Execute the shell script to run the test cases.
-./test.sh
+go test ./lib/... -v -cover
 ```
+
+- The `-v` command line option prints all the verbose logs generated during test case execution.
+- The `-cover` command line option prints the total code coverage metrics for each package.
 
 ## Example Usage
 
 To work with creating a HTTP server and process incoming requests, add the below import statement at the top of your Go file.
 
 ```go
-import "github.com/citadelofcode/proteus/lib/http"
+import "github.com/citadelofcode/proteus"
 ```
 
 Once the import statement is included, use the below statement to create a new instance of a web server to handle incoming HTTP requests.
 
 ```go
-server := http.NewServer()
+server := proteus.NewServer()
 ```
 
 Please note that, the above statement merely creates an instance of the web server. To make it listen for incoming requests, use the **Listen()** method of the server instance, as given below.
@@ -59,7 +46,7 @@ server.Static("/files/static", **TargetDirectoryPath**)
 To declare a custom route and its associated handler function, refer to the following code snippet.
 
 ```go
-server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) error {
+server.Get("/user/:name", func(req *proteus.HttpRequest, res *proteus.HttpResponse) error {
     names, _ := req.Segments.Get("name")
     server.LogInfo(fmt.Sprintf("The name value in the path is %s\n", strings.Join(names, ",")))
     res.Status(http.StatusOK)
@@ -68,7 +55,7 @@ server.Get("/user/:name", func(req *http.HttpRequest, res *http.HttpResponse) er
 })
 ```
 
-The handler function must accept two parameters - pointer to a HttpRequest and pointer to a HttpResponse instance. It must return an error.
+The handler function must accept two parameters - reference to an instance each of `proteus.HttpRequest` and  `proteus.HttpResponse`. It must return an error.
 
 ## HTTP Version Compatibility
 

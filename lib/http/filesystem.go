@@ -1,4 +1,4 @@
-package fs
+package http
 
 import (
 	"bufio"
@@ -86,19 +86,15 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	return fileContents, nil
 }
 
-// Returns pointer to a FILE object that contains metadata for file available at the given path. 
+// Returns pointer to a FILE object that contains metadata for file available at the given path.
 // The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
 func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*File, error) {
 	var file File
-	fileStat, err := os.Stat(CompleteFilePath)
+	pathType, err := GetPathType(CompleteFilePath)
 	if err != nil {
-		fsfErr := new(FileSystemError)
-		fsfErr.TargetPath = CompleteFilePath
-		fsfErr.Message = fmt.Sprintf("Error occurred while fetching file stats: %s", err.Error())
-		return nil, fsfErr
+		return nil, err
 	}
-	Mode := fileStat.Mode()
-	if Mode.IsRegular() {
+	if pathType == FILE_TYPE_PATH {
 		file.ContentType = strings.TrimSpace(ContentType)
 		if !OnlyMetadata {
 			fileContents, err := ReadFileContents(CompleteFilePath)
@@ -107,11 +103,12 @@ func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*F
 			}
 
 			file.Contents = fileContents
-		} 
-	
-		file.LastModifiedAt = fileStat.ModTime()
-		file.Name = fileStat.Name()
-		file.Size = fileStat.Size()
+		}
+
+		fileStats, _ := os.Stat(CompleteFilePath)
+		file.LastModifiedAt = fileStats.ModTime()
+		file.Name = fileStats.Name()
+		file.Size = fileStats.Size()
 		return &file, nil
 	} else {
 		fsfErr := new(FileSystemError)

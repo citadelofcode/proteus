@@ -2,6 +2,8 @@ package http
 
 import (
 	"testing"
+	"path/filepath"
+	"runtime"
 )
 
 // Test case to check the working of th route validation logic.
@@ -46,17 +48,23 @@ func Test_Router_AddStaticRoute(t *testing.T) {
 		Name string
 		InputMethod string
 		InputRoute string
-		TargetFilePath string
+		TargetPath string
 		ExpectedErr string
 	} {
-		{ "Valid route with valid target folder path", "GET", "/files/static", "/Users/maheshkumaarbalaji/Projects/proteus/Files/", "" },
-		{ "Valid route with a target file path", "GET", "/files/staticone", "/Users/maheshkumaarbalaji/Projects/proteus/Files/home.html", "RoutingError" },
-		{ "Valid route with a relative target path", "GET", "/files/statictwo", "./../proteus/Files/", "RoutingError" },
+		{ "Valid route with valid target folder path", "GET", "/files/static", "../assets", "" },
+		{ "Valid route with a target file path", "GET", "/files/staticone", "../assets/index.html", "RoutingError" },
 	}
+	
+	_, CurrentFilePath, _, _ := runtime.Caller(0)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			err := testRouter.addStaticRoute(testCase.InputMethod, testCase.InputRoute, testCase.TargetFilePath)
+			testCaseTargetPath := testCase.TargetPath
+			isAbsolutePath := filepath.IsAbs(testCaseTargetPath)
+			if !isAbsolutePath {
+				testCaseTargetPath = filepath.Join(filepath.Dir(CurrentFilePath), testCaseTargetPath)
+			}
+			err := testRouter.addStaticRoute(testCase.InputMethod, testCase.InputRoute, testCaseTargetPath)
 			if testCase.ExpectedErr == "" {
 				if err != nil {
 					tt.Errorf("Was not expecting an error for adding static route to router and yet got this instead - %v", err)

@@ -11,17 +11,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Returns the file media type for the given file path.
 func getContentType(CompleteFilePath string) (string, error) {
-	pathType, err := fs.GetPathType(CompleteFilePath)
+	pathType, err := GetPathType(CompleteFilePath)
 	if err != nil {
 		return "", err
 	}
 
-	if pathType == fs.FILE_TYPE_PATH {
+	if pathType == FILE_TYPE_PATH {
 		fileExtension := filepath.Ext(CompleteFilePath)
 		fileExtension = strings.TrimSpace(fileExtension)
 		fileExtension = strings.ToLower(fileExtension)
@@ -34,7 +33,7 @@ func getContentType(CompleteFilePath string) (string, error) {
 		}
 	}
 
-	nfErr := new(fs.FileSystemError)
+	nfErr := new(FileSystemError)
 	nfErr.TargetPath = CompleteFilePath
 	nfErr.Message = "Given path does not point to a file"
 	return "", nfErr

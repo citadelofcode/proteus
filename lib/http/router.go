@@ -1,10 +1,10 @@
 package http
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"github.com/citadelofcode/proteus/lib/fs"
 )
 
 // Structure to contain information about a single route declared in the Router.
@@ -62,16 +62,20 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 	}
 	isAbsolutePath := filepath.IsAbs(TargetPath)
 	if !isAbsolutePath {
-		reError := new(RoutingError)
-		reError.RoutePath = TargetPath
-		reError.Message = "addStaticRoute: Given target folder path is not an absolute path"
-		return reError
+		absoluteTargetPath, err := filepath.Abs(TargetPath)
+		if err != nil {
+			reError := new(RoutingError)
+			reError.RoutePath = TargetPath
+			reError.Message = fmt.Sprintf("Error occurred while trying to fetch absolute path of %s :: %s", TargetPath, err.Error())
+			return reError
+		}
+		TargetPath = absoluteTargetPath
 	}
-	PathType, err := fs.GetPathType(TargetPath)
+	PathType, err := GetPathType(TargetPath)
 	if err != nil {
 		return err
 	}
-	if PathType == fs.FILE_TYPE_PATH {
+	if PathType == FILE_TYPE_PATH {
 		reError := new(RoutingError)
 		reError.RoutePath = TargetPath
 		reError.Message = "Target path given should point to a directory not a file"

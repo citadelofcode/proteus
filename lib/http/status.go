@@ -7,17 +7,31 @@ import (
 
 type StatusCode int
 
+// Structure to represent a response status code and its associated information.
+type HttpStatus struct {
+	// HTTP response status code.
+	Code StatusCode
+	// Short message for the corresponding status code.
+	Message string
+	// Error description for error status codes (>=400).
+	ErrorDescription string
+}
+
 const (
 	StatusOK StatusCode = 200
 	StatusCreated StatusCode = 201
 	StatusAccepted StatusCode = 202
 	StatusNonAuthoritative StatusCode = 203
 	StatusNoContent StatusCode = 204
+	StatusResetContent StatusCode = 205
+	StatusPartialContent StatusCode = 206
 	StatusMultipleChoices StatusCode = 300
 	StatusMovedPermanently StatusCode = 301
 	StatusMovedTemporarily StatusCode = 302
 	StatusSeeOther StatusCode = 303
 	StatusNotModified StatusCode = 304
+	StatusUseProxy StatusCode = 305
+	StatusTemporaryRedirect StatusCode = 307
 	StatusBadRequest StatusCode = 400
 	StatusUnauthorized StatusCode = 401
 	StatusPaymentRequired StatusCode = 402
@@ -35,6 +49,7 @@ const (
 	StatusBadGateway StatusCode = 502
 	StatusServiceUnavailable StatusCode = 503
 	StatusGatewayTimeout StatusCode = 504
+	StatusHTTPVersionNotSupported StatusCode = 505
 )
 
 // Gets the minified message assosciated with a HTTP status code.
@@ -52,11 +67,11 @@ func (code StatusCode) GetStatusMessage() string {
 func (code StatusCode) GetErrorContent() string {
 	htmlTemplate := `<html>
 					<head>
-					<title>{{printf "%s - Response" .StatusCode}}</title>
+					<title>{{printf "%s - Response" .Code}</title>
 					</head>
 					<body>
-					<h1>{{printf "%d - %s" .StatusCode .StatusMessage}}</h1>
-					<p>{{.Description}}</p>
+					<h1>{{printf "%d - %s" .Code .Message}}</h1>
+					<p>{{.ErrorDescription}}</p>
 					</body>
 				</html>`
 	
