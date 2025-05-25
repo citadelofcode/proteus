@@ -150,14 +150,6 @@ func newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	return &httpResponse
 }
 
-// Creates and returns pointer to a new instance of Router.
-func newRouter() *Router {
-	router := new(Router)
-	router.Routes = make([]Route, 0)
-	router.RouteTree = createTree()
-	return router
-}
-
 // Returns the current UTC time in RFC 1123 format.
 func getRfc1123Time() string {
 	currentTime := time.Now().UTC()
@@ -196,20 +188,18 @@ func cleanRoute(RoutePath string) string {
 	return RoutePath
 }
 
-// Returns a pointer to a newly created instance of Logger.
-func newLogger() *logger {
-	eventLogger := new(logger)
-	eventLogger.srvLogger = log.New(os.Stdout, "", log.LstdFlags)
-	eventLogger.serverName = getServerDefaults("server_name")
-	return eventLogger
-}
-
 // Returns an instance of HTTP web server.
 func NewServer() *HttpServer {
 	var server HttpServer
 	server.HostAddress = "";
 	server.PortNumber = 0
-	server.innerRouter = newRouter()
-	server.eventLogger = newLogger()
+	
+	server.innerRouter = new(Router)
+	server.innerRouter.Routes = make([]Route, 0)
+	server.innerRouter.RouteTree = createTree()
+	
+	server.eventLogger = new(Sonar)
+	server.eventLogger.logger = log.New(os.Stdout, "", log.LstdFlags)
+	server.eventLogger.serverName = getServerDefaults("server_name")
 	return &server
 }
