@@ -170,7 +170,7 @@ func (req *HttpRequest) readHeader() error {
 func (req *HttpRequest) readBody() error {
 	if req.ContentLength > 0 {
 		req.Body = make([]byte, req.ContentLength)
-		for index := 0; index < req.ContentLength; index++ {
+		for index := range req.ContentLength{
 			bodyByte, err := req.reader.ReadByte()
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				return &ReadTimeoutError{}

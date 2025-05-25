@@ -62,7 +62,7 @@ func addRouteToTree(RouteTree *prefixTreeNode, RoutePath string) {
 // Returns a slice of strings which represents all the routes present in the given route tree.
 func getRoutesInTree(root *prefixTreeNode) []string {
 	routes := root.getAllRoutes()
-	for index := 0; index < len(routes); index++ {
+	for index := range routes {
 		routes[index] = cleanRoute(routes[index])
 	}
 

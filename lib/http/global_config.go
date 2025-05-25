@@ -12,7 +12,7 @@ var DateHeaders []string
 // List of content types supported by the web server.
 var AllowedContentTypes map[string]string
 // A map containing all the default server configuration values.
-var ServerDefaults map[string]string
+var ServerDefaults map[string]any
 // List of all versions of HTTP supported by the web server.
 var Versions map[string][]string
 // List of response status codes and their associated information.
@@ -75,12 +75,12 @@ func init() {
         "zip": "application/zip",
 	}
 	
-	ServerDefaults = map[string]string {
+	ServerDefaults = map[string]any {
 		"hostname": "localhost",
-		"port": "8080",
+		"port": 8080,
 		"server_name": "proteus",
 		"content_type": "application/octet-stream",
-		"shutdown_timeout": "60",
+		"shutdown_timeout": 60,
 	}
 	
 	Versions = map[string][]string {
