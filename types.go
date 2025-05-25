@@ -21,3 +21,4 @@ type Params = http.Params
 
 // A structure to represent the status code returned with each response sent back by the server instance.
 type StatusCode = http.StatusCode
+

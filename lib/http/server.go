@@ -52,7 +52,7 @@ type HttpServer struct {
 	// Router instance that contains all the routes and their associated handlers.
 	innerRouter *Router
 	// Logger instance associated with the Server instance.
-	eventLogger *logger
+	eventLogger *Sonar
 	// Waitgroup to synchronize the termination of all request connections.
 	wg sync.WaitGroup
 	// Channel to transmit server shutdown signal across all goroutines.
@@ -376,21 +376,21 @@ func (srv *HttpServer) Connect(routePath string, handlerFunc Handler) error {
 // Logs the given message as an error in the server logs.
 func (srv *HttpServer) LogError(message string) {
 	message = strings.TrimSpace(message)
-	srv.eventLogger.logError(message)
+	srv.eventLogger.customError(message)
 }
 
 // Logs the given message as an information in the server logs.
 func (srv *HttpServer) LogInfo(message string) {
 	message = strings.TrimSpace(message)
-	srv.eventLogger.logInfo(message)
+	srv.eventLogger.customInfo(message)
 }
 
 // Logs the status for a HTTP request to the server logger.
 func (srv *HttpServer) Log(request *HttpRequest, response *HttpResponse) {
 	logMsg := fmt.Sprintf("  %s  %s  %s  HTTP/%s  %d  %s", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, response.StatusMessage)
 	if response.StatusCode < 400 {
-		srv.eventLogger.logInfo(logMsg)
+		srv.eventLogger.customInfo(logMsg)
 	} else {
-		srv.eventLogger.logError(logMsg)
+		srv.eventLogger.customError(logMsg)
 	}
 }

@@ -5,28 +5,30 @@ import (
 	"log"
 )
 
-// Logger to log messages to the console or to a file.
-type logger struct {
-	// Pointer to the log.Logger instance created.
-	srvLogger *log.Logger
-	// Name of the server instance for which logs sre being recorded.
+// Custom logger to record logs of requests being processed by the web server instance.
+type Sonar struct {
+	// Underlying logger instance to be used to record logs.
+	logger *log.Logger
+	// Name of the web server instance.
 	serverName string
+	// Format of the log message to be recorded for each request processed.
+	logFormat string
 }
 
 // Logs an error message to the log file. If logger is not initialized, the error message is printed to stdout.
-func (lg *logger) logError(Msg string) {
-	if lg.srvLogger != nil {
-		lg.srvLogger.Printf("%s  ERROR  %s", lg.serverName, Msg)
+func (sn *Sonar) customError(Msg string) {
+	if sn.logger != nil {
+		sn.logger.Printf("%s  ERROR  %s", sn.serverName, Msg)
 	} else {
-		fmt.Printf("%s  %s  ERROR  %s", getRfc1123Time(), lg.serverName, Msg)
+		fmt.Printf("%s  %s  ERROR  %s", getRfc1123Time(), sn.serverName, Msg)
 	}
 }
 
 // Logs a message to the log file. If logger is not initialized, the message is printed to stdout.
-func (lg *logger)logInfo(Msg string) {
-	if lg.srvLogger != nil {
-		lg.srvLogger.Printf("%s  INFO  %s", lg.serverName, Msg)
+func (sn *Sonar) customInfo(Msg string) {
+	if sn.logger != nil {
+		sn.logger.Printf("%s  INFO  %s", sn.serverName, Msg)
 	} else {
-		fmt.Printf("%s  %s  INFO  %s", getRfc1123Time(), lg.serverName, Msg)
+		fmt.Printf("%s  %s  INFO  %s", getRfc1123Time(), sn.serverName, Msg)
 	}
 }

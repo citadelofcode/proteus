@@ -6,6 +6,14 @@ import (
 	"runtime"
 )
 
+// Creates and returns pointer to a new instance of Router for unit testing.
+func newRouter() *Router {
+	router := new(Router)
+	router.Routes = make([]Route, 0)
+	router.RouteTree = createTree()
+	return router
+}
+
 // Test case to check the working of th route validation logic.
 func Test_Router_ValidateRoute(t *testing.T) {
 	testRouter := newRouter()
