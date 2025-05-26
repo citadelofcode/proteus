@@ -59,7 +59,7 @@ func (res *HttpResponse) addGeneralHeaders() {
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addResponseHeaders() {
 	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
-		res.Headers.Add("Server", getServerDefaults("server_name"))
+		res.Headers.Add("Server", getServerDefaults("server_name").(string))
 	}
 }
 
@@ -266,7 +266,7 @@ func (res *HttpResponse) SendError(Content string) error {
 func (res *HttpResponse) Send(content string) error {
 	_, ok := res.Headers.Get("Content-Type")
 	if !ok {
-		fileMediaType := getServerDefaults("Content_Type")
+		fileMediaType := getServerDefaults("content_type").(string)
 		res.Headers.Add("Content-Type", fileMediaType)
 	}
 

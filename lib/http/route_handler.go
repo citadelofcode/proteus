@@ -4,8 +4,9 @@ import (
 	"strings"
 )
 
-// Represents a handler function that is executed once any received request is parsed. You can define different handlers for different routes and HTTP methods.
-type Handler func (*HttpRequest, *HttpResponse) error
+// Represents a handler function that is executed once any received request is parsed. 
+// You can define different handlers for different routes and HTTP methods.
+type RouteHandler func (*HttpRequest, *HttpResponse) error
 
 // Handler to fetch static file and send the file contents as response back to the client.
 var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) error {
@@ -27,6 +28,12 @@ var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) erro
 
 // Default error handler logic to be implemented for sending an error response back to client.
 var ErrorHandler = func (request *HttpRequest, response *HttpResponse) error {
+	if response.StatusCode < 400 {
+		ceErr := new(CustomError)
+		ceErr.Message = "Response Status code should be 400 or above to invoke the default error handler"
+		return ceErr
+	}
+	
 	if response.StatusCode == int(StatusMethodNotAllowed) {
 		response.Headers.Add("Allow", getAllowedMethods(response.Version))
 	} 

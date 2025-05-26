@@ -29,7 +29,8 @@ func getContentType(CompleteFilePath string) (string, error) {
 		if exists {
 			return contentType, nil
 		} else {
-			return strings.TrimSpace(ServerDefaults["content_type"]), nil
+			defaultContentType := getServerDefaults("content_type").(string)
+			return strings.TrimSpace(defaultContentType), nil
 		}
 	}
 
@@ -39,27 +40,10 @@ func getContentType(CompleteFilePath string) (string, error) {
 	return "", nfErr
 }
 
-// Returns the default port number from the list of default configuration values.
-func getDefaultPort() int {
-	value := ServerDefaults["port"]
-	value = strings.TrimSpace(value)
-	portNumber, _ := strconv.Atoi(value)
-	return portNumber
-}
-
-// Returns the server shutdown timeout value (in seconds) from the configuration file.
-func getSrvShutdownTimout() int {
-	value := ServerDefaults["shutdown_timeout"]
-	value = strings.TrimSpace(value)
-	timeout, _ := strconv.Atoi(value)
-	return timeout
-}
-
 // Returns the value for the given key from server default configuration values.
-func getServerDefaults(key string) string {
+func getServerDefaults(key string) any {
 	key = strings.TrimSpace(key)
 	value := ServerDefaults[key]
-	value = strings.TrimSpace(value)
 	return value
 }
 
@@ -188,18 +172,30 @@ func cleanRoute(RoutePath string) string {
 	return RoutePath
 }
 
-// Returns an instance of HTTP web server.
-func NewServer() *HttpServer {
-	var server HttpServer
-	server.HostAddress = "";
-	server.PortNumber = 0
+// Creates a new instance of HTTP web server and binds it to the given hostname and port number.
+// If the hostname is empty, the web server instance is bound to the locahost.
+// If the port number is zero, the web server instance is bound to port - 8080.
+func NewServer(HostAddres string, PortNumber int) *HttpServer {
+	server := new(HttpServer)
+	if strings.TrimSpace(HostAddres) == "" {
+		defaultHost := getServerDefaults("hostname").(string)
+		server.HostAddress = strings.TrimSpace(defaultHost)
+	} else {
+		server.HostAddress = strings.TrimSpace(HostAddres)
+	}
+	
+	if PortNumber == 0 {
+		defaultPort := getServerDefaults("port_number").(int)
+		server.PortNumber = defaultPort
+	} else {
+		server.PortNumber = PortNumber
+	}
 	
 	server.innerRouter = new(Router)
 	server.innerRouter.Routes = make([]Route, 0)
 	server.innerRouter.RouteTree = createTree()
+	server.requestLogger = log.New(os.Stdout, "", 0)
+	server.logFormat = ""
 	
-	server.eventLogger = new(Sonar)
-	server.eventLogger.logger = log.New(os.Stdout, "", log.LstdFlags)
-	server.eventLogger.serverName = getServerDefaults("server_name")
-	return &server
+	return server
 }

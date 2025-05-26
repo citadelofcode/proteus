@@ -4,21 +4,21 @@ import (
 	"github.com/citadelofcode/proteus/lib/http"
 )
 
-// A structure representing the web server that can accept and process incoming HTTP requests.
+// Represents a web server that can accept and process incoming HTTP requests.
 type HttpServer = http.HttpServer
 
-// A structure to represent HTTP requests received by the web server.
+// Represents a HTTP request received by the web server.
 type HttpRequest = http.HttpRequest
 
-// A structure to represent HTTP response created for each request received by tht web server instance.
+// Represents a HTTP response sent back in response to a HTTP request received by the web server.
 type HttpResponse = http.HttpResponse
 
-// A structure to represent the collection of headers received with each request received or included in each response sent back by the server instance.
+// A collection of HTTP request or response headers stored as key-value pairs.
 type Headers = http.Headers
 
-// A structure to represent the collection of parameters (both query and path parameters) present in each request received by the server instance.
+// A collection of parameters (either query or path) present in the HTTP request, stored as key-value pairs.
 type Params = http.Params
 
-// A structure to represent the status code returned with each response sent back by the server instance.
+// Represents the status code of the HTTP response sent back to the client.
 type StatusCode = http.StatusCode
 
