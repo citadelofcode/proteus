@@ -67,3 +67,16 @@ type FileSystemError struct {
 func (fsf *FileSystemError) Error() string {
 	return fmt.Sprintf("File System Error for [%s] :: %s", fsf.TargetPath, fsf.Message)
 }
+
+// Custom error to track errors raised between receiving the request and sending the response.
+type CustomError struct {
+	// The actual error message raised by the program.
+	Message string
+}
+
+// Returns a customized error message associated with the instance of RequestResponseError.
+func (ce *CustomError) Error() string {
+	return fmt.Sprintf("Request Response Error :: %s", ce.Message)
+}
+
+

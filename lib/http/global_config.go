@@ -5,6 +5,9 @@ const (
 	HEADER_LINE_SEPERATOR = "\r\n"
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
+	INFO_LEVEL = "INFO"
+	ERROR_LEVEL = "ERROR"
+	WARN_LEVEL = "WARNING"
 )
 
 // Collection of headers supported by the server that has a date value.

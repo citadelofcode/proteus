@@ -20,7 +20,8 @@ func (headers Headers) Add(key string, value string) {
 	}
 }
 
-// Gets the value for a given header key from the collection of headers. The function also returns a boolean value to indicate if the key was found in the collection.
+// Gets the value for a given header key from the collection of headers. 
+// The function also returns a boolean value to indicate if the key was found in the collection.
 func (headers Headers) Get(key string) (string, bool) {
 	key = textproto.CanonicalMIMEHeaderKey(key)
 	valueParts, ok := headers[key]

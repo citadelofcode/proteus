@@ -104,7 +104,7 @@ func (srv * HttpServer) Listen() {
 	serverAddress := fmt.Sprintf("%s:%d", srv.HostAddress, srv.PortNumber)
 	server, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		srv.Log(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()), "error")
+		srv.Log(fmt.Sprintf("Error occurred while setting up listener socket: %s", err.Error()), ERROR_LEVEL)
 		return
 	}
 
@@ -117,8 +117,8 @@ func (srv * HttpServer) Listen() {
 	}
 
 	srv.cw = new(ConnectionWatcher)
-	srv.Log(fmt.Sprintf("Web server is listening at http://%s", serverAddress), "info")
-	srv.Log("To terminate the server, press Ctrl + C", "info")
+	srv.Log(fmt.Sprintf("Web server is listening at http://%s", serverAddress), INFO_LEVEL)
+	srv.Log("To terminate the server, press Ctrl + C", INFO_LEVEL)
 	srv.wg.Add(1)
 	go srv.acceptConnections()
 	<-sigChan
@@ -133,18 +133,18 @@ func (srv *HttpServer) acceptConnections() {
 	for {
 		select {
 		case <-srv.shutdown:
-			srv.Log("Server Shutdown initiated :: No new connections will be accepted from now.", "info")
+			srv.Log("Server Shutdown initiated :: No new connections will be accepted from now.", INFO_LEVEL)
 			return
 		default:
 			clientConnection, err := srv.listener.Accept()
 			if err != nil {
 				if !srv.isClosed() {
-					srv.Log(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()), "error")
+					srv.Log(fmt.Sprintf("Error occurred while accepting a new client: %s", err.Error()), ERROR_LEVEL)
 				}
 				continue
 			}
 
-			srv.Log(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()), "info")
+			srv.Log(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()), INFO_LEVEL)
 			srv.wg.Add(1)
 			go srv.handleClient(clientConnection)
 			srv.cw.UpdateCount(1)
@@ -164,13 +164,13 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		if err != nil {
 			_, ok := err.(*ReadTimeoutError)
 			if err != io.EOF && !ok {
-				srv.Log(err.Error(), "error")
+				srv.Log(err.Error(), ERROR_LEVEL)
 			}
 			
 			return 0, err
 		}
 
-		srv.Log(fmt.Sprintf("Client [%s] :: New Request :: %s %s HTTP/%s", ClientConnection.RemoteAddr().String(), httpRequest.Method, httpRequest.ResourcePath, httpRequest.Version), "info")
+		srv.Log(fmt.Sprintf("Client [%s] :: New Request :: %s %s HTTP/%s", ClientConnection.RemoteAddr().String(), httpRequest.Method, httpRequest.ResourcePath, httpRequest.Version), INFO_LEVEL)
 		httpResponse := newResponse(ClientConnection, httpRequest)
 		var timeout int
 		var max int
@@ -178,7 +178,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		if ok && strings.EqualFold(connValue, "keep-alive") && strings.EqualFold(httpResponse.Version, "1.1") {
 			currCount := srv.cw.GetCount()
 			timeout, max = srv.getKeepAliveHeuristic(currCount)
-			srv.Log(fmt.Sprintf("The timeout value returned by heuristic is %d seconds for active connection count %d", timeout, currCount), "info")
+			srv.Log(fmt.Sprintf("The timeout value returned by heuristic is %d seconds for active connection count %d", timeout, currCount), INFO_LEVEL)
 			tcpConn, ok := ClientConnection.(*net.TCPConn)
 			if ok {
 				tcpConn.SetKeepAlive(true)
@@ -194,21 +194,21 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			httpResponse.Status(StatusMethodNotAllowed)
 			err = ErrorHandler(httpRequest, httpResponse)
 			if err != nil {
-				srv.Log(err.Error(), "error")
+				srv.Log(err.Error(), ERROR_LEVEL)
 			}
 		} else {
 			routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
 			if err != nil {
-				srv.Log(err.Error(), "error")
+				srv.Log(err.Error(), ERROR_LEVEL)
 				httpResponse.Status(StatusNotFound)
 				err = ErrorHandler(httpRequest, httpResponse)
 				if err != nil {
-					srv.Log(err.Error(), "error")
+					srv.Log(err.Error(), ERROR_LEVEL)
 				}
 			} else {
 				err = routeHandler(httpRequest, httpResponse)
 				if err != nil {
-					srv.Log(err.Error(), "error")
+					srv.Log(err.Error(), ERROR_LEVEL)
 				}
 			}
 		}
@@ -227,15 +227,15 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				<-timer.C
 			}
 			timer.Reset(time.Duration(timeout) * time.Second)
-			srv.Log(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout), "info")
+			srv.Log(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout), INFO_LEVEL)
 		}
 
 		select {
 		case <-srv.shutdown:
-			srv.Log("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String(), "info")
+			srv.Log("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String(), INFO_LEVEL)
 			return
 		case <-timer.C:
-			srv.Log(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()), "info")
+			srv.Log(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()), INFO_LEVEL)
 			return
 		default:
 		}
@@ -252,10 +252,10 @@ func (srv *HttpServer) getKeepAliveHeuristic(connCount int) (int, int) {
 
 // Terminate all the active connections with the server before shutting down the server instance.
 func (srv *HttpServer) terminate() {
-	srv.Log("Server shutdown signal received...", "info")
+	srv.Log("Server shutdown signal received...", INFO_LEVEL)
 	terminateDone := make(chan struct{})
 	go func () {
-		srv.Log("Server Shutdown :: All existing connections are being terminated.", "info")
+		srv.Log("Server Shutdown :: All existing connections are being terminated.", INFO_LEVEL)
 		close(srv.shutdown)
 		srv.close()
 		srv.wg.Wait()
@@ -266,16 +266,16 @@ func (srv *HttpServer) terminate() {
 
 	select {
 	case <-terminateDone:
-		srv.Log("Server Shutdown :: All active connections have been terminated successfully.", "info")
+		srv.Log("Server Shutdown :: All active connections have been terminated successfully.", INFO_LEVEL)
 		return
 	case <-time.After(time.Duration(srvShutTimeout) * time.Second):
-		srv.Log("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.", "error")
+		srv.Log("Server Shutdown Timeout :: Not all active connection(s) were terminated successfully.", ERROR_LEVEL)
 		return
 	}
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Get(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Get(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("GET", routePath, handlerFunc)
 	if err != nil {
@@ -286,7 +286,7 @@ func (srv *HttpServer) Get(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new HEAD endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Head(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Head(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("HEAD", routePath, handlerFunc)
 	if err != nil {
@@ -297,7 +297,7 @@ func (srv *HttpServer) Head(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new POST endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Post(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Post(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("POST", routePath, handlerFunc)
 	if err != nil {
@@ -308,7 +308,7 @@ func (srv *HttpServer) Post(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new PUT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Put(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Put(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("PUT", routePath, handlerFunc)
 	if err != nil {
@@ -319,7 +319,7 @@ func (srv *HttpServer) Put(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new DELETE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Delete(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Delete(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("DELETE", routePath, handlerFunc)
 	if err != nil {
@@ -330,7 +330,7 @@ func (srv *HttpServer) Delete(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new TRACE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Trace(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Trace(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("TRACE", routePath, handlerFunc)
 	if err != nil {
@@ -341,7 +341,7 @@ func (srv *HttpServer) Trace(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new OPTIONS endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Options(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Options(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("OPTIONS", routePath, handlerFunc)
 	if err != nil {
@@ -352,7 +352,7 @@ func (srv *HttpServer) Options(routePath string, handlerFunc Handler) error {
 }
 
 // Creates a new CONNECT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Connect(routePath string, handlerFunc Handler) error {
+func (srv *HttpServer) Connect(routePath string, handlerFunc RouteHandler) error {
 	routePath = strings.TrimSpace(routePath)
 	err := srv.innerRouter.addDynamicRoute("CONNECT", routePath, handlerFunc)
 	if err != nil {

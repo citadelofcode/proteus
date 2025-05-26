@@ -14,7 +14,7 @@ type Route struct {
 	// Defined only for static routes. This field contains the target folder path mapped to the given route path. It is assigned an empty string for dynamic routes.
 	StaticFolderPath string
 	// Handler function to be executed for the route paths.
-	RouteHandler Handler
+	RouteHandler RouteHandler
 	// Represents the order in which the route was defined by the users. This also determines the priority of a path being chosen when a request is being processed.
 	SequenceNumber int
 	// HTTP method for which the route is defined
@@ -97,7 +97,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 }
 
 // Adds a new dynamic route and its associated handler function to the collection of routes defined in the router instance.
-func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc Handler) error {
+func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc RouteHandler) error {
 	RoutePath = cleanRoute(RoutePath)
 	Method = strings.TrimSpace(Method)
 	Method = strings.ToUpper(Method)
@@ -126,7 +126,7 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 }
 
 // Function that matches a given route with the route tree and fetches the matched route, uses this route to get the corresponding handler (static or dynamic).
-func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
+func (rtr *Router) matchRoute(request *HttpRequest) (RouteHandler, error) {
 	routePath := request.ResourcePath
 	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
 	if routeInfo.routePath == "" {
@@ -142,7 +142,7 @@ func (rtr *Router) matchRoute(request *HttpRequest) (Handler, error) {
 		}
 	}
 
-	var handler Handler
+	var handler RouteHandler
 	for _, route := range rtr.Routes {
 		if strings.EqualFold(routeInfo.routePath, route.RoutePath) {
 			handler = route.RouteHandler
