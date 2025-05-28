@@ -6,39 +6,12 @@ import (
 	"log"
 	"net"
 	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"path"
 )
-
-// Returns the file media type for the given file path.
-func getContentType(CompleteFilePath string) (string, error) {
-	pathType, err := GetPathType(CompleteFilePath)
-	if err != nil {
-		return "", err
-	}
-
-	if pathType == FILE_TYPE_PATH {
-		fileExtension := filepath.Ext(CompleteFilePath)
-		fileExtension = strings.TrimSpace(fileExtension)
-		fileExtension = strings.ToLower(fileExtension)
-		fileExtension = strings.TrimLeft(fileExtension, ".")
-		contentType, exists := AllowedContentTypes[fileExtension]
-		if exists {
-			return contentType, nil
-		} else {
-			defaultContentType := getServerDefaults("content_type").(string)
-			return strings.TrimSpace(defaultContentType), nil
-		}
-	}
-
-	nfErr := new(FileSystemError)
-	nfErr.TargetPath = CompleteFilePath
-	nfErr.Message = "Given path does not point to a file"
-	return "", nfErr
-}
 
 // Returns the value for the given key from server default configuration values.
 func getServerDefaults(key string) any {
@@ -160,15 +133,16 @@ func isHttpDate(value string) (bool, time.Time) {
 }
 
 // Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.
+// Replaces all instances of "//" with "/". This function is used for cleaning URL route paths.
+// If the given route path is an empty string, it is returned as-is.
 func cleanRoute(RoutePath string) string {
 	RoutePath = strings.TrimSpace(RoutePath)
-	if RoutePath != "" {
-		RoutePath = strings.ToLower(RoutePath)
-		RoutePath = strings.TrimRight(RoutePath, "/")
-		RoutePath = strings.TrimLeft(RoutePath, "/")
-		RoutePath = "/" + RoutePath
+	if !strings.EqualFold(RoutePath, "") {
+		RoutePath = path.Clean(RoutePath)
+		if !strings.HasPrefix(RoutePath, ROUTE_SEPERATOR) {
+			RoutePath = path.Join(ROUTE_SEPERATOR, RoutePath)
+		}
 	}
-
 	return RoutePath
 }
 
@@ -183,19 +157,18 @@ func NewServer(HostAddres string, PortNumber int) *HttpServer {
 	} else {
 		server.HostAddress = strings.TrimSpace(HostAddres)
 	}
-	
+
 	if PortNumber == 0 {
 		defaultPort := getServerDefaults("port_number").(int)
 		server.PortNumber = defaultPort
 	} else {
 		server.PortNumber = PortNumber
 	}
-	
-	server.innerRouter = new(Router)
-	server.innerRouter.Routes = make([]Route, 0)
-	server.innerRouter.RouteTree = createTree()
+
+	server.innerRouter = NewRouter()
 	server.requestLogger = log.New(os.Stdout, "", 0)
 	server.logFormat = ""
-	
+	server.middlewares = make([]Middleware, 0)
+
 	return server
 }

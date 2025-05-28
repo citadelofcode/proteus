@@ -2,7 +2,7 @@ package http
 
 import (
 	"strings"
-	"fmt"
+	"path"
 )
 
 // Structure to represent each individual node of the prefix tree (trie tree).
@@ -34,23 +34,13 @@ func createTree() *prefixTreeNode {
 	return newRouteTreeNode("")
 }
 
-// Normalizes the given route path into a slice of route parts present in the path. 
+// Normalizes the given route path into a slice of route parts present in the path.
 // This function also removes any leading or trailing space and '/' before getting the route parts.
 func normalizeRoute(RoutePath string) []string {
-	RoutePath = strings.TrimSpace(RoutePath)
-	RoutePath = strings.ToLower(RoutePath)
-	RoutePath = strings.TrimRight(RoutePath, "/")
-	RoutePath = strings.TrimLeft(RoutePath, "/")
-	RouteParts := strings.Split(RoutePath, "/")
-	NormalizedParts := make([]string, 0)
-	for _, routePart := range RouteParts {
-		routePart = strings.TrimSpace(routePart)
-		if routePart != "" {
-			NormalizedParts = append(NormalizedParts, routePart)
-		}
-	}
-
-	return NormalizedParts
+	RoutePath = cleanRoute(RoutePath)
+	RoutePath = strings.TrimPrefix(RoutePath, ROUTE_SEPERATOR)
+	RouteParts := strings.Split(RoutePath, ROUTE_SEPERATOR)
+	return RouteParts
 }
 
 // Inserts the given route path in the route tree.
@@ -69,7 +59,7 @@ func getRoutesInTree(root *prefixTreeNode) []string {
 	return routes
 }
 
-// Match the given route path with the route tree and fetch all the path parameters. 
+// Match the given route path with the route tree and fetch all the path parameters.
 // This function returns the pointer to a matchRouteInfo object which contains the original route in the router and the list of all path parameter(s).
 func matchRouteInTree(root *prefixTreeNode, RoutePath string) *matchRouteInfo {
 	routeInfo := new(matchRouteInfo)
@@ -107,11 +97,10 @@ func matchRouteInTree(root *prefixTreeNode, RoutePath string) *matchRouteInfo {
 		} else {
 			break
 		}
-	}	
+	}
 
-	routePathMatch := strings.Join(finalRouteParts, "/")
-	routePathMatch = cleanRoute(routePathMatch)
-	routeInfo.routePath = routePathMatch
+	finalRoutePath := path.Join(finalRouteParts...)
+	routeInfo.routePath = cleanRoute(finalRoutePath)
 	return routeInfo
 }
 
@@ -160,7 +149,7 @@ func (rtn *prefixTreeNode) getAllRoutes() []string {
 			childParts := cn.getAllRoutes()
 			for _, part := range childParts {
 				if rtn.value != "" {
-					routeParts = append(routeParts, fmt.Sprintf("%s/%s", rtn.value, part))
+					routeParts = append(routeParts, path.Join(rtn.value, part))
 				} else {
 					routeParts = append(routeParts, part)
 				}

@@ -22,8 +22,8 @@ type HttpRequest struct {
 	Version string
 	// Collection of all the request headers received.
 	Headers Headers
-	// Represents the complete contents of the request body.
-	Body []byte
+	// Represents the complete contents of the request body as a stream of bytes.
+	bodyBytes []byte
 	// Total length of the request body (in bytes).
 	ContentLength int
 	// Streamed reader instance to read the HTTP request from the network stream.
@@ -40,7 +40,7 @@ type HttpRequest struct {
 
 // Initializes the instance of HttpRequest with default values for all its fields.
 func (req *HttpRequest) initialize() {
-	req.Body = make([]byte, 0)
+	req.bodyBytes = make([]byte, 0)
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.staticFilePath = ""
@@ -169,7 +169,7 @@ func (req *HttpRequest) readHeader() error {
 // Reads the body from request byte stream and stores them in the HttpRequest instance.
 func (req *HttpRequest) readBody() error {
 	if req.ContentLength > 0 {
-		req.Body = make([]byte, req.ContentLength)
+		req.bodyBytes = make([]byte, req.ContentLength)
 		for index := range req.ContentLength{
 			bodyByte, err := req.reader.ReadByte()
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
@@ -181,7 +181,7 @@ func (req *HttpRequest) readBody() error {
 				reqError.Message = err.Error()
 				return reqError
 			}
-			req.Body[index] = bodyByte
+			req.bodyBytes[index] = bodyByte
 		}
 	}
 
@@ -191,11 +191,12 @@ func (req *HttpRequest) readBody() error {
 // Parses all the query paramaters from the request URL and stores in the HttpRequest instance.
 // Once the parsing is done, it removes the query parameters string from the Resource Path field.
 func (req *HttpRequest) parseQueryParams() error {
-	parsedUrl, err := url.Parse(req.ResourcePath)
+	CleanedPath := cleanRoute(req.ResourcePath)
+	parsedUrl, err := url.Parse(CleanedPath)
 	if err != nil {
 		reqError := new(RequestParseError)
 		reqError.Section = "QueryParams"
-		reqError.Value = req.ResourcePath
+		reqError.Value = CleanedPath
 		reqError.Message = err.Error()
 		return reqError
 	}
@@ -206,7 +207,7 @@ func (req *HttpRequest) parseQueryParams() error {
 	}
 
 	if len(req.Query) > 0 {
-		req.ResourcePath, _, _ = strings.Cut(req.ResourcePath, "?")
+		req.ResourcePath, _, _ = strings.Cut(CleanedPath, "?")
 	}
 
 	return nil
@@ -218,7 +219,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 		return false, nil
 	}
 
-	fileMediaType, err := getContentType(CompleteFilePath)
+	fileMediaType, err := GetContentType(CompleteFilePath)
 	if err != nil {
 		return false, err
 	}

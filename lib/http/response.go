@@ -20,8 +20,8 @@ type HttpResponse struct {
 	Version string
 	// Collection of all response headers being sent by the server.
 	Headers Headers
-	// Complete contents of the response body.
-	Body []byte
+	// Complete contents of the response body as a stream of bytes.
+	bodyBytes []byte
 	// Streamed writer instance to write the response bytes to the network stream.
 	writer *bufio.Writer
 	// Boolean value to indicate if the response created is a test object.
@@ -163,13 +163,13 @@ func (res *HttpResponse) writeHeaders() error {
 
 // Writes the response body to the response byte stream.
 func (res *HttpResponse) writeBody() error {
-	if len(res.Body) > 0 {
+	if len(res.bodyBytes) > 0 {
 		ContentType, exists := res.Headers.Get("Content-Type")
 		if exists {
 			ContentType = strings.TrimSpace(ContentType)
 			ContentType = strings.ToLower(ContentType)
 			if strings.HasPrefix(ContentType, "text") {
-				_, err := res.writer.WriteString(string(res.Body))
+				_, err := res.writer.WriteString(string(res.bodyBytes))
 				if err != nil {
 					resErr := new(ResponseError)
 					resErr.Section = "Body"
@@ -178,7 +178,7 @@ func (res *HttpResponse) writeBody() error {
 					return resErr
 				}
 			} else {
-				_, err := res.writer.Write(res.Body)
+				_, err := res.writer.Write(res.bodyBytes)
 				if err != nil {
 					resErr := new(ResponseError)
 					resErr.Section = "Body"
@@ -188,7 +188,7 @@ func (res *HttpResponse) writeBody() error {
 				}
 			}
 		} else {
-			_, err := res.writer.Write(res.Body)
+			_, err := res.writer.Write(res.bodyBytes)
 			if err != nil {
 				resErr := new(ResponseError)
 				resErr.Section = "Body"
@@ -232,7 +232,7 @@ func (res *HttpResponse) Status(status StatusCode) {
 func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) error {
 	fileMediaType, ok := res.Headers.Get("Content-Type")
 	if !ok {
-		fileMediaType, err := getContentType(CompleteFilePath)
+		fileMediaType, err := GetContentType(CompleteFilePath)
 		if err != nil {
 			return err
 		}
@@ -247,7 +247,7 @@ func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) er
 	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
 	res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
 	if !OnlyMetadata {
-		res.Body = file.Contents
+		res.bodyBytes = file.Contents
 	}
 
 	return res.write()
@@ -258,7 +258,7 @@ func (res *HttpResponse) SendError(Content string) error {
 	responseContent := []byte(Content)
 	res.Headers.Add("Content-Type", ERROR_MSG_CONTENT_TYPE)
 	res.Headers.Add("Content-Length", strconv.Itoa(len(responseContent)))
-	res.Body = responseContent
+	res.bodyBytes = responseContent
 	return res.write()
 }
 
@@ -273,6 +273,6 @@ func (res *HttpResponse) Send(content string) error {
 	content = strings.TrimSpace(content)
 	contentBuffer := []byte(content)
 	res.Headers.Add("Content-Length", strconv.Itoa(len(contentBuffer)))
-	res.Body = contentBuffer
+	res.bodyBytes = contentBuffer
 	return res.write()
 }
