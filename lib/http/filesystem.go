@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"path/filepath"
 )
 
 const (
@@ -34,6 +35,7 @@ type File struct {
 
 // Returns the type of the given path i.e., file or folder. An error is returned if the given path is neither a file nor a folder.
 func GetPathType(TargetPath string) (string, error) {
+	TargetPath = CleanPath(TargetPath)
 	fileStat, err := os.Stat(TargetPath)
 	if err != nil {
 		fsfErr := new(FileSystemError)
@@ -56,6 +58,7 @@ func GetPathType(TargetPath string) (string, error) {
 
 // Reads the contents of the file available at the given path and returns it as a byte slice.
 func ReadFileContents(CompleteFilePath string) ([]byte, error) {
+	CompleteFilePath = CleanPath(CompleteFilePath)
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
 	if err != nil {
@@ -116,4 +119,49 @@ func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*F
 		fsfErr.Message = "Given path does not point to a file"
 		return nil, fsfErr
 	}
+}
+
+// Cleans the path by replacing multiple seperators with a single seperator.
+// It also removes any trailing seperators in the given path.
+func CleanPath(Path string) string {
+	Path = strings.TrimSpace(Path)
+	Path = filepath.Clean(Path)
+	return Path
+}
+
+// Returns a boolean value indicating if the given path is an absolute path.
+func IsAbsolute(FilePath string) bool {
+	return filepath.IsAbs(CleanPath(FilePath))
+}
+
+// Gets the file extension of the given file path without the period (".") precending it.
+func GetFileExtension(CompleteFilePath string) string {
+	CompleteFilePath = CleanPath(CompleteFilePath)
+	fileExtension := filepath.Ext(CompleteFilePath)
+	fileExtension = strings.TrimPrefix(fileExtension, ".")
+	return fileExtension
+}
+
+// Returns the file media type for the given file path.
+func GetContentType(CompleteFilePath string) (string, error) {
+	pathType, err := GetPathType(CompleteFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	if pathType == FILE_TYPE_PATH {
+		fileExtension := strings.ToLower(GetFileExtension(CompleteFilePath))
+		contentType, exists := AllowedContentTypes[fileExtension]
+		if exists {
+			return contentType, nil
+		} else {
+			defaultContentType := getServerDefaults("content_type").(string)
+			return strings.TrimSpace(defaultContentType), nil
+		}
+	}
+
+	nfErr := new(FileSystemError)
+	nfErr.TargetPath = CompleteFilePath
+	nfErr.Message = "Given path does not point to a file"
+	return "", nfErr
 }

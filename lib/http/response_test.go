@@ -81,10 +81,10 @@ func Test_Response_Write(t *testing.T) {
 			var opBuffer bytes.Buffer
 			writer := bufio.NewWriter(&opBuffer)
 			res.setWriter(writer)
-			res.Body = []byte(testCase.IpContent)
+			res.bodyBytes = []byte(testCase.IpContent)
 			if !strings.EqualFold(testCase.IpVersion, "0.9") {
 				res.AddHeader("Content-Type", testCase.IpContentType)
-				res.AddHeader("Content-Length", strconv.Itoa(len(res.Body)))
+				res.AddHeader("Content-Length", strconv.Itoa(len(res.bodyBytes)))
 				res.Status(testCase.IpStatus)
 			}
 

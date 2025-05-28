@@ -1,8 +1,6 @@
 package http
 
 import (
-	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -21,6 +19,8 @@ type Route struct {
 	Method string
 	// Route path being defined for the router
 	RoutePath string
+	// List of all route level middlewares configured.
+	middlewares []Middleware
 }
 
 // Structure to hold all the routes and the associated routing logic.
@@ -50,9 +50,7 @@ func (rtr *Router) validateRoute(routePath string) bool {
 // Adds a new static route and target folder to the static routes collection.
 func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath string) error {
 	RoutePath = cleanRoute(RoutePath)
-	TargetPath = strings.TrimSpace(TargetPath)
-	Method = strings.TrimSpace(Method)
-	Method = strings.ToUpper(Method)
+	Method = strings.TrimSpace(strings.ToUpper(Method))
 	isRouteValid := rtr.validateRoute(RoutePath)
 	if !isRouteValid {
 		reError := new(RoutingError)
@@ -60,16 +58,12 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 		reError.Message = "addStaticRoute: Route contains one or more invalid characters"
 		return reError
 	}
-	isAbsolutePath := filepath.IsAbs(TargetPath)
+	isAbsolutePath := IsAbsolute(TargetPath)
 	if !isAbsolutePath {
-		absoluteTargetPath, err := filepath.Abs(TargetPath)
-		if err != nil {
-			reError := new(RoutingError)
-			reError.RoutePath = TargetPath
-			reError.Message = fmt.Sprintf("Error occurred while trying to fetch absolute path of %s :: %s", TargetPath, err.Error())
-			return reError
-		}
-		TargetPath = absoluteTargetPath
+		reError := new(RoutingError)
+		reError.RoutePath = TargetPath
+		reError.Message = "Target path must be absolute"
+		return reError
 	}
 	PathType, err := GetPathType(TargetPath)
 	if err != nil {
@@ -89,6 +83,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 		SequenceNumber: rtr.LastSequenceNumber,
 		Method: Method,
 		RoutePath: RoutePath,
+		middlewares: make([]Middleware, 0),
 	}
 
 	rtr.Routes = append(rtr.Routes, routeObj)
@@ -97,7 +92,7 @@ func (rtr *Router) addStaticRoute(Method string, RoutePath string, TargetPath st
 }
 
 // Adds a new dynamic route and its associated handler function to the collection of routes defined in the router instance.
-func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc RouteHandler) error {
+func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc RouteHandler, middlewareList []Middleware) error {
 	RoutePath = cleanRoute(RoutePath)
 	Method = strings.TrimSpace(Method)
 	Method = strings.ToUpper(Method)
@@ -118,15 +113,17 @@ func (rtr *Router) addDynamicRoute(Method string, RoutePath string, handlerFunc 
 		SequenceNumber: rtr.LastSequenceNumber,
 		Method: Method,
 		RoutePath: RoutePath,
+		middlewares: make([]Middleware, 0),
 	}
 
+	routeObj.middlewares = append(routeObj.middlewares, middlewareList...)
 	rtr.Routes = append(rtr.Routes, routeObj)
 	addRouteToTree(rtr.RouteTree, RoutePath)
 	return nil
 }
 
 // Function that matches a given route with the route tree and fetches the matched route, uses this route to get the corresponding handler (static or dynamic).
-func (rtr *Router) matchRoute(request *HttpRequest) (RouteHandler, error) {
+func (rtr *Router) matchRoute(request *HttpRequest) (*Route, error) {
 	routePath := request.ResourcePath
 	routeInfo := matchRouteInTree(rtr.RouteTree, routePath)
 	if routeInfo.routePath == "" {
@@ -142,10 +139,10 @@ func (rtr *Router) matchRoute(request *HttpRequest) (RouteHandler, error) {
 		}
 	}
 
-	var handler RouteHandler
+	var finalRoute *Route
 	for _, route := range rtr.Routes {
 		if strings.EqualFold(routeInfo.routePath, route.RoutePath) {
-			handler = route.RouteHandler
+			finalRoute = &route
 			if route.IsStatic {
 				request.staticFilePath = strings.Replace(request.ResourcePath, routeInfo.routePath, route.StaticFolderPath, 1)
 			}
@@ -153,5 +150,13 @@ func (rtr *Router) matchRoute(request *HttpRequest) (RouteHandler, error) {
 		}
 	}
 
-	return handler, nil
+	return finalRoute, nil
+}
+
+// Creates a new instance of Router and returns a reference to the instance.
+func NewRouter() *Router {
+	router := new(Router)
+	router.Routes = make([]Route, 0)
+	router.RouteTree = createTree()
+	return router
 }

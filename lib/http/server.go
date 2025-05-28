@@ -65,6 +65,8 @@ type HttpServer struct {
 	listClosed bool
 	// Mutex to manage read-write activities on the listClosed flag.
 	limu sync.RWMutex
+	// Server level middlewares to be executed for all incoming requests regardless of the matching route.
+	middlewares []Middleware
 }
 
 // Function that closes the server listener and marks the listClosed flag as closed.
@@ -99,6 +101,11 @@ func (srv *HttpServer) Static(Route string, TargetPath string) error {
 	return nil
 }
 
+// Adds a server level middleware to the server instance.
+func (srv *HttpServer) Use(middleware Middleware) {
+	srv.middlewares = append(srv.middlewares, middleware)
+}
+
 // Setup the web server instance to listen for incoming HTTP requests at the given hostname and port number.
 func (srv * HttpServer) Listen() {
 	serverAddress := fmt.Sprintf("%s:%d", srv.HostAddress, srv.PortNumber)
@@ -126,10 +133,25 @@ func (srv * HttpServer) Listen() {
 	close(sigChan)
 }
 
+// Processes the given set of middlewares for the request and response.
+func (srv *HttpServer) processMiddlewares(request *HttpRequest, response *HttpResponse, middlewareList []Middleware) bool {
+	mwsInstance := CreateMiddlewares(middlewareList)
+	for _, middleware := range mwsInstance.Stack {
+		if !mwsInstance.ProcessNext {
+			break
+		}
+		midErr := middleware(request, response, mwsInstance.Stop)
+		if midErr != nil {
+			srv.Log(fmt.Sprintf("Middleware error :: %s", midErr.Error()), ERROR_LEVEL)
+		}
+	}
+	return mwsInstance.ProcessNext
+}
+
 // Accepts incoming connections and creates seperate goroutines for each new client.
 func (srv *HttpServer) acceptConnections() {
 	defer srv.wg.Done()
-	
+
 	for {
 		select {
 		case <-srv.shutdown:
@@ -166,7 +188,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			if err != io.EOF && !ok {
 				srv.Log(err.Error(), ERROR_LEVEL)
 			}
-			
+
 			return 0, err
 		}
 
@@ -185,7 +207,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				tcpConn.SetKeepAlivePeriod(time.Duration(timeout) * time.Second)
 				tcpConn.SetReadDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 			}
-			
+
 			httpResponse.Headers.Add("Connection", "keep-alive")
 			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
 		}
@@ -197,7 +219,16 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				srv.Log(err.Error(), ERROR_LEVEL)
 			}
 		} else {
-			routeHandler, err := srv.innerRouter.matchRoute(httpRequest)
+			// First stage of execution will implement all server level middlewares configured.
+			if len(srv.middlewares) > 0 {
+				processNext := srv.processMiddlewares(httpRequest, httpResponse, srv.middlewares)
+				if !processNext {
+					return timeout, nil
+				}
+			}
+
+			// Next match the request route with the route tree to find a match.
+			matchedRoute, err := srv.innerRouter.matchRoute(httpRequest)
 			if err != nil {
 				srv.Log(err.Error(), ERROR_LEVEL)
 				httpResponse.Status(StatusNotFound)
@@ -206,13 +237,21 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 					srv.Log(err.Error(), ERROR_LEVEL)
 				}
 			} else {
-				err = routeHandler(httpRequest, httpResponse)
-				if err != nil {
-					srv.Log(err.Error(), ERROR_LEVEL)
+				// After match is fetched, process the route level middlewares.
+				if len(matchedRoute.middlewares) > 0 {
+					processNext := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.middlewares)
+					if !processNext {
+						return timeout, nil
+					}
+				}
+
+				// Finally execute the handler for the matched route.
+				handlerErr := matchedRoute.RouteHandler(httpRequest, httpResponse)
+				if handlerErr != nil {
+					srv.Log(handlerErr.Error(), ERROR_LEVEL)
 				}
 			}
 		}
-
 		return timeout, nil
 	}
 
@@ -275,9 +314,9 @@ func (srv *HttpServer) terminate() {
 }
 
 // Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Get(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Get(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("GET", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("GET", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -286,9 +325,9 @@ func (srv *HttpServer) Get(routePath string, handlerFunc RouteHandler) error {
 }
 
 // Creates a new HEAD endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Head(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Head(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("HEAD", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("HEAD", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -297,9 +336,9 @@ func (srv *HttpServer) Head(routePath string, handlerFunc RouteHandler) error {
 }
 
 // Creates a new POST endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Post(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Post(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("POST", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("POST", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -308,9 +347,9 @@ func (srv *HttpServer) Post(routePath string, handlerFunc RouteHandler) error {
 }
 
 // Creates a new PUT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Put(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Put(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("PUT", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("PUT", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -319,9 +358,9 @@ func (srv *HttpServer) Put(routePath string, handlerFunc RouteHandler) error {
 }
 
 // Creates a new DELETE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Delete(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Delete(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("DELETE", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("DELETE", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -330,9 +369,9 @@ func (srv *HttpServer) Delete(routePath string, handlerFunc RouteHandler) error 
 }
 
 // Creates a new TRACE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Trace(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Trace(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("TRACE", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("TRACE", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -341,9 +380,9 @@ func (srv *HttpServer) Trace(routePath string, handlerFunc RouteHandler) error {
 }
 
 // Creates a new OPTIONS endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Options(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Options(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("OPTIONS", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("OPTIONS", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}
@@ -352,9 +391,9 @@ func (srv *HttpServer) Options(routePath string, handlerFunc RouteHandler) error
 }
 
 // Creates a new CONNECT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Connect(routePath string, handlerFunc RouteHandler) error {
+func (srv *HttpServer) Connect(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
 	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("CONNECT", routePath, handlerFunc)
+	err := srv.innerRouter.addDynamicRoute("CONNECT", routePath, handlerFunc, middlewareList)
 	if err != nil {
 		return err
 	}

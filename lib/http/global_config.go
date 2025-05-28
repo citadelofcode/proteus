@@ -5,6 +5,7 @@ const (
 	HEADER_LINE_SEPERATOR = "\r\n"
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
+	ROUTE_SEPERATOR = "/"
 	INFO_LEVEL = "INFO"
 	ERROR_LEVEL = "ERROR"
 	WARN_LEVEL = "WARNING"
@@ -77,7 +78,7 @@ func init() {
         "xml": "application/xml",
         "zip": "application/zip",
 	}
-	
+
 	ServerDefaults = map[string]any {
 		"hostname": "localhost",
 		"port": 8080,
@@ -85,13 +86,13 @@ func init() {
 		"content_type": "application/octet-stream",
 		"shutdown_timeout": 60,
 	}
-	
+
 	Versions = map[string][]string {
 		"0.9":  { "GET" },
 		"1.0":  { "GET", "POST", "HEAD" },
 		"1.1":  { "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT" },
 	}
-	
+
 	ResponseStatusCodes = []HttpStatus {
 		{ Code: StatusOK, Message: "OK", ErrorDescription: "" },
 		{ Code: StatusCreated, Message: "Created", ErrorDescription: "" },
