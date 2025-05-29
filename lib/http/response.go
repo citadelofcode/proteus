@@ -24,19 +24,18 @@ type HttpResponse struct {
 	bodyBytes []byte
 	// Streamed writer instance to write the response bytes to the network stream.
 	writer *bufio.Writer
-	// Boolean value to indicate if the response created is a test object.
-	isTest bool
+	// The server instance processing this response.
+	Server *HttpServer
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
-func (res *HttpResponse) initialize(version string, isTest bool) {
+func (res *HttpResponse) initialize(version string) {
 	version = strings.TrimSpace(version)
 	if version == "" {
 		res.Version = "0.9"
 	} else {
 		res.Version = version
 	}
-	res.isTest = isTest
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
@@ -47,10 +46,15 @@ func (res *HttpResponse) setWriter(writer *bufio.Writer) {
 	res.writer = writer
 }
 
+// Sets the server field to the given server instance reference.
+func (res *HttpResponse) setServer(serverRef *HttpServer) {
+	res.Server = serverRef
+}
+
 // Adds all the general HTTP headers to the HttpResponse instance.
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addGeneralHeaders() {
-	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
+	if !strings.EqualFold(res.Version, "0.9") {
 		res.Headers.Add("Date", getRfc1123Time())
 	}
 }
@@ -58,7 +62,7 @@ func (res *HttpResponse) addGeneralHeaders() {
 // Adds all the default response HTTP headers to the HttpResponse instance.
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addResponseHeaders() {
-	if !strings.EqualFold(res.Version, "0.9") && !res.isTest {
+	if !strings.EqualFold(res.Version, "0.9") {
 		res.Headers.Add("Server", getServerDefaults("server_name").(string))
 	}
 }
@@ -203,23 +207,17 @@ func (res *HttpResponse) writeBody() error {
 }
 
 // Adds a new key-value pair to the request headers collection.
-func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) error {
+func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
 		isValid, _ := isHttpDate(HeaderValue)
 		if isValid {
 			res.Headers.Add(HeaderKey, HeaderValue)
 		} else {
-			resErr := new(ResponseError)
-			resErr.Section = "Header"
-			resErr.Value = fmt.Sprintf("%s: %s", HeaderKey, HeaderValue)
-			resErr.Message = "Date string must conform to one of these formats - RFC1123 or ANSIC"
-			return resErr
+			res.Server.Log(fmt.Sprintf("Error while adding header - [%s] :: Date string must conform to one of these formats - RFC1123 or ANSIC", HeaderKey), ERROR_LEVEL)
 		}
 	} else {
 		res.Headers.Add(HeaderKey, HeaderValue)
 	}
-
-	return nil
 }
 
 // Sets the status of the HTTP response instance.

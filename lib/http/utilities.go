@@ -1,10 +1,8 @@
 package http
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"slices"
 	"strconv"
@@ -88,25 +86,6 @@ func getResponseVersion(requestVersion string) string {
 	}
 }
 
-// Creates and returns pointer to a new instance of HTTP request.
-func newRequest(Connection net.Conn) *HttpRequest {
-	var httpRequest HttpRequest
-	httpRequest.initialize()
-	reader := bufio.NewReader(Connection)
-	httpRequest.setReader(reader)
-	httpRequest.ClientAddress = Connection.RemoteAddr().String()
-	return &httpRequest
-}
-
-// Creates and returns pointer to a new instance of HTTP response.
-func newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
-	var httpResponse HttpResponse
-	httpResponse.initialize(getResponseVersion(request.Version), false)
-	writer := bufio.NewWriter(Connection)
-	httpResponse.setWriter(writer)
-	return &httpResponse
-}
-
 // Returns the current UTC time in RFC 1123 format.
 func getRfc1123Time() string {
 	currentTime := time.Now().UTC()
@@ -146,20 +125,26 @@ func cleanRoute(RoutePath string) string {
 	return RoutePath
 }
 
+// Calculate the number of milliseconds elapsed since given time.
+func timeSince(start time.Time) int64 {
+	durationSince := time.Since(start)
+	return durationSince.Milliseconds()
+}
+
 // Creates a new instance of HTTP web server and binds it to the given hostname and port number.
 // If the hostname is empty, the web server instance is bound to the locahost.
 // If the port number is zero, the web server instance is bound to port - 8080.
-func NewServer(HostAddres string, PortNumber int) *HttpServer {
+func NewServer(HostAddress string, PortNumber int) *HttpServer {
 	server := new(HttpServer)
-	if strings.TrimSpace(HostAddres) == "" {
+	if strings.TrimSpace(HostAddress) == "" {
 		defaultHost := getServerDefaults("hostname").(string)
 		server.HostAddress = strings.TrimSpace(defaultHost)
 	} else {
-		server.HostAddress = strings.TrimSpace(HostAddres)
+		server.HostAddress = strings.TrimSpace(HostAddress)
 	}
 
 	if PortNumber == 0 {
-		defaultPort := getServerDefaults("port_number").(int)
+		defaultPort := getServerDefaults("port").(int)
 		server.PortNumber = defaultPort
 	} else {
 		server.PortNumber = PortNumber
@@ -167,7 +152,7 @@ func NewServer(HostAddres string, PortNumber int) *HttpServer {
 
 	server.innerRouter = NewRouter()
 	server.requestLogger = log.New(os.Stdout, "", 0)
-	server.logFormat = ""
+	server.logFormat = "combined"
 	server.middlewares = make([]Middleware, 0)
 
 	return server

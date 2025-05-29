@@ -30,12 +30,16 @@ type HttpRequest struct {
 	reader *bufio.Reader
 	// Contains the target file path in case the request is for a static file.
 	staticFilePath string
+	// Total time taken in milliseconds to process the request.
+	processingTime int64
 	// Collection of all query parameters stored as key-values pair.
 	Query Params
 	// Collection of all path parameter values stored as key-value pair.
 	Segments Params
 	// The IP address and port number of the client who made the request to the server
 	ClientAddress string
+	// The server instance processing this request.
+	Server *HttpServer
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields.
@@ -44,6 +48,7 @@ func (req *HttpRequest) initialize() {
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.staticFilePath = ""
+	req.processingTime = 0
 	req.Query = make(Params)
 	req.Segments = make(Params)
 }
@@ -51,6 +56,11 @@ func (req *HttpRequest) initialize() {
 // Assigns the stream reader field of HttpRequest with a valid request stream.
 func (req *HttpRequest) setReader(reader *bufio.Reader) {
 	req.reader = reader
+}
+
+// Sets the server field to the given server instance reference.
+func (req *HttpRequest) setServer(serverRef *HttpServer) {
+	req.Server = serverRef
 }
 
 // Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.
@@ -156,10 +166,7 @@ func (req *HttpRequest) readHeader() error {
 
 			HeaderKey = strings.TrimSpace(HeaderKey)
 			HeaderValue = strings.TrimSpace(HeaderValue)
-			err := req.addHeader(HeaderKey, HeaderValue)
-			if err != nil {
-				return err
-			}
+			req.AddHeader(HeaderKey, HeaderValue)
 		}
 	}
 
@@ -252,21 +259,15 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 }
 
 // Adds a new key-value pair to the request headers collection.
-func (req *HttpRequest) addHeader(HeaderKey string, HeaderValue string) error {
+func (req *HttpRequest) AddHeader(HeaderKey string, HeaderValue string) {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
 		isValid, _ := isHttpDate(HeaderValue)
 		if isValid {
 			req.Headers.Add(HeaderKey, HeaderValue)
 		} else {
-			reqError := new(RequestParseError)
-			reqError.Section = "Header"
-			reqError.Value = fmt.Sprintf("%s: %s", HeaderKey, HeaderValue)
-			reqError.Message = "The given date header value should be one of either of these formats - RFC 1123 or ANSIC"
-			return reqError
+			req.Server.Log(fmt.Sprintf("Error while adding header - [%s] :: Date string must conform to one of these formats - RFC1123 or ANSIC", HeaderKey), ERROR_LEVEL)
 		}
 	} else {
 		req.Headers.Add(HeaderKey, HeaderValue)
 	}
-
-	return nil
 }

@@ -12,6 +12,7 @@ func newTestRequest(t testing.TB) *HttpRequest {
 	t.Helper()
 	testReq := new(HttpRequest)
 	testReq.initialize()
+	testReq.setServer(NewServer("", 0))
 	return testReq
 }
 
@@ -83,34 +84,16 @@ func Test_Request_AddHeader(t *testing.T) {
 		InputHeaderKey string
 		InputHeaderValue string
 		ExpHdrCount int
-		ExpectedErrType string
 	} {
-		{ "A non-date header field", "Content-Type", "application/pdf", 1, "" },
-		{ "A date header field with value in ANSIC format", "Date", "Sun Nov  6 08:49:37 1994", 2, "" },
-		{ "A date header field with value in RFC 1123 format", "Last-Modified", "Mon, 30 Jun 2008 11:05:30 GMT", 3, "" },
-		{ "A date header field with invalid date value", "If-Modified-Since", "2024-12-11T12:34:56Z" ,3, "RequestParseError" },
+		{ "A non-date header field", "Content-Type", "application/pdf", 1 },
+		{ "A date header field with value in ANSIC format", "Date", "Sun Nov  6 08:49:37 1994", 2 },
+		{ "A date header field with value in RFC 1123 format", "Last-Modified", "Mon, 30 Jun 2008 11:05:30 GMT", 3 },
+		{ "A date header field with invalid date value", "If-Modified-Since", "2024-12-11T12:34:56Z" ,3 },
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			err := testRequest.addHeader(testCase.InputHeaderKey, testCase.InputHeaderValue)
-			if testCase.ExpectedErrType == "" {
-				if err != nil {
-					tt.Errorf("Was not expecting an error and yet received one - %v", err)
-					return
-				}
-			}
-
-			if testCase.ExpectedErrType == "RequestParseError" {
-				rpErr, ok := err.(*RequestParseError)
-				if !ok {
-					tt.Errorf("Was expecting a request parse error, but got this instead - %v", err)
-				} else {
-					tt.Logf("Received a request parse error - %v as expected", rpErr)
-				}
-				return
-			}
-
+			testRequest.AddHeader(testCase.InputHeaderKey, testCase.InputHeaderValue)
 			if testRequest.Headers.Length() != testCase.ExpHdrCount {
 				tt.Errorf("The request header count - %d does not match the expected header count - %d", testRequest.Headers.Length(), testCase.ExpHdrCount)
 			} else {
