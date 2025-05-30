@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -9,11 +10,11 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
-	"bufio"
 )
 
 // Number of CPUs that can be used for facilitating concurrency.
@@ -286,7 +287,7 @@ func (srv *HttpServer) terminate() {
 // Logs the status of a request once its processing is completed.
 // The details entered in the log dependes on the log format configured for the server.
 //
-// "combined" [default log format] << :remote-addr [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] >> This follows the common Apache log format
+// "common" [default log format] << :remote-addr [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] >> This follows the common Apache log format
 //
 // "short" << :remote-addr :method :url HTTP/:http-version :status :res[content-length] - :response-time ms >>
 //
@@ -294,19 +295,19 @@ func (srv *HttpServer) terminate() {
 //
 // "dev" << :method :url :status :response-time ms - :res[content-length] >>
 func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
-	if strings.EqualFold(srv.logFormat, "dev") {
+	if strings.EqualFold(srv.logFormat, DEV_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
 		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, request.processingTime, responseContentLength)
-	} else if strings.EqualFold(srv.logFormat, "tiny") {
+	} else if strings.EqualFold(srv.logFormat, TINY_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
 		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, request.processingTime)
-	} else if strings.EqualFold(srv.logFormat, "short") {
+	} else if strings.EqualFold(srv.logFormat, SHORT_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
@@ -318,6 +319,19 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 			responseContentLength = "-"
 		}
 		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, getRfc1123Time(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
+	}
+}
+
+// Sets the log configuration for the server instance.
+// Allowed options - COMMON (default), DEV, TINY, SHORT.
+//
+// If the option provided is not supported, then the default log format is configured for the server instance.
+func (srv *HttpServer) SetLogger(logFormat string) {
+	allowedLogFormats := []string { COMMON_LOGGER, DEV_LOGGER, TINY_LOGGER, SHORT_LOGGER }
+	if slices.Contains(allowedLogFormats, logFormat) {
+		srv.logFormat = logFormat
+	} else {
+		srv.logFormat = COMMON_LOGGER
 	}
 }
 

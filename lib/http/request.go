@@ -198,7 +198,7 @@ func (req *HttpRequest) readBody() error {
 // Parses all the query paramaters from the request URL and stores in the HttpRequest instance.
 // Once the parsing is done, it removes the query parameters string from the Resource Path field.
 func (req *HttpRequest) parseQueryParams() error {
-	CleanedPath := cleanRoute(req.ResourcePath)
+	CleanedPath := CleanRoute(req.ResourcePath)
 	parsedUrl, err := url.Parse(CleanedPath)
 	if err != nil {
 		reqError := new(RequestParseError)

@@ -111,10 +111,16 @@ func isHttpDate(value string) (bool, time.Time) {
 	}
 }
 
+// Calculate the number of milliseconds elapsed since given time.
+func timeSince(start time.Time) int64 {
+	durationSince := time.Since(start)
+	return durationSince.Milliseconds()
+}
+
 // Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.
 // Replaces all instances of "//" with "/". This function is used for cleaning URL route paths.
 // If the given route path is an empty string, it is returned as-is.
-func cleanRoute(RoutePath string) string {
+func CleanRoute(RoutePath string) string {
 	RoutePath = strings.TrimSpace(RoutePath)
 	if !strings.EqualFold(RoutePath, "") {
 		RoutePath = path.Clean(RoutePath)
@@ -123,12 +129,6 @@ func cleanRoute(RoutePath string) string {
 		}
 	}
 	return RoutePath
-}
-
-// Calculate the number of milliseconds elapsed since given time.
-func timeSince(start time.Time) int64 {
-	durationSince := time.Since(start)
-	return durationSince.Milliseconds()
 }
 
 // Creates a new instance of HTTP web server and binds it to the given hostname and port number.
@@ -152,7 +152,7 @@ func NewServer(HostAddress string, PortNumber int) *HttpServer {
 
 	server.innerRouter = NewRouter()
 	server.requestLogger = log.New(os.Stdout, "", 0)
-	server.logFormat = "combined"
+	server.logFormat = COMMON_LOGGER
 	server.middlewares = make([]Middleware, 0)
 
 	return server

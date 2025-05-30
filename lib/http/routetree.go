@@ -5,159 +5,130 @@ import (
 	"path"
 )
 
+// Contains the match information when a given route is matched with the prefix tree.
+type MatchInfo struct {
+	// List of all path parameter(s) fetched by comparing the given route with the one matched in the prefix tree.
+	Segments Params
+	// The matched route in the prefix tree.
+	MatchedPath string
+	// Route instance associated with the given path.
+	MatchedRoute *Route
+}
+
 // Structure to represent each individual node of the prefix tree (trie tree).
-type prefixTreeNode struct {
-	// Part of the route present between 2 '/'s.
-	value string
-	// A slice containing all the child nodes for the current node in the tree.
-	children []*prefixTreeNode
+type PrefixTreeNode struct {
+	// Child elements to the current node stored as a map.
+	Children map[string]*PrefixTreeNode
+	// Route instance mapped to the current node. Default value is nil.
+	Route *Route
 }
 
-// Represents the data returned when a HTTP request route is matched to the routes configured in the router.
-type matchRouteInfo struct {
-	// List of all path parameter(s) present in the route path
-	segments Params
-	// The complete route path matched.
-	routePath string
-}
-
-// Creates and returns pointer to a new node in the route tree.
-func newRouteTreeNode(RoutePart string) *prefixTreeNode {
-	newNode := new(prefixTreeNode)
-	newNode.value = strings.TrimSpace(RoutePart)
-	newNode.children = make([]*prefixTreeNode, 0)
+// Creates and returns pointer to a new node in the prefix tree.
+func NewPrefixTreeNode() *PrefixTreeNode {
+	newNode := new(PrefixTreeNode)
+	newNode.Route = nil
+	newNode.Children = make(map[string]*PrefixTreeNode)
 	return newNode
 }
 
+// Structure to represent the prefix tree to be built
+type PrefixTree struct {
+	// Root node of the prefix tree
+	Root *PrefixTreeNode
+}
+
 // Creates an empty prefix tree and returns a pointer to the root node of the tree. An empty prefix tree contains only the root node with an empty string assigned as its value.
-func createTree() *prefixTreeNode {
-	return newRouteTreeNode("")
+func EmptyPrefixTree() *PrefixTree {
+	pt := new(PrefixTree)
+	pt.Root = NewPrefixTreeNode()
+	return pt
+}
+
+// Inserts the given route path to the prefix tree.
+func (pt *PrefixTree) Insert(RoutePath string, MappedRoute *Route) {
+	RouteParts := NormalizeRoute(RoutePath)
+	if len(RouteParts) == 0 {
+		pt.Root.Route = MappedRoute
+		return
+	}
+	Current := pt.Root
+	for _, part := range RouteParts {
+		if _, exists := Current.Children[part]; !exists {
+			Current.Children[part] = NewPrefixTreeNode()
+		}
+		Current = Current.Children[part]
+	}
+	Current.Route = MappedRoute
+}
+
+// Get all the routes available in the prefix tree.
+func (pt *PrefixTree) GetAllRoutes() []string {
+	routes := make([]string, 0)
+	var traverse func(*PrefixTreeNode, string)
+	traverse = func(CurrentNode *PrefixTreeNode, RoutePath string) {
+		if CurrentNode.Route != nil {
+			routes = append(routes, RoutePath)
+		}
+		for part, NextNode := range CurrentNode.Children {
+			traverse(NextNode, path.Join(RoutePath, part))
+		}
+	}
+	traverse(pt.Root, "/")
+	for index := range routes {
+		routes[index] = CleanRoute(routes[index])
+	}
+	return routes
+}
+
+// Find a match for the given route in the prefix tree.
+func (pt *PrefixTree) Match(RoutePath string) *MatchInfo {
+	MatchedRouteInfo := new(MatchInfo)
+	MatchedRouteInfo.Segments = make(Params)
+	ipRouteParts := NormalizeRoute(RoutePath)
+	if len(ipRouteParts) == 0 {
+		MatchedRouteInfo.MatchedPath = ROUTE_SEPERATOR
+		MatchedRouteInfo.MatchedRoute = pt.Root.Route
+		return MatchedRouteInfo
+	}
+	opRouteParts := make([]string, 0)
+	Current := pt.Root
+	for _, part := range ipRouteParts {
+		Next, exists := Current.Children[part]
+		if !exists {
+			hasBeenFound := false
+			for key, nextNode := range Current.Children {
+				paramName, isFound := strings.CutPrefix(key, ":")
+				if isFound {
+					MatchedRouteInfo.Segments.Add(paramName, []string { part })
+					opRouteParts = append(opRouteParts, key)
+					Current = nextNode
+					hasBeenFound = true
+					break
+				}
+			}
+			if !hasBeenFound {
+				MatchedRouteInfo.MatchedRoute = nil
+				MatchedRouteInfo.MatchedPath = ""
+				return MatchedRouteInfo
+			}
+		} else {
+			opRouteParts = append(opRouteParts, part)
+			Current = Next
+		}
+	}
+	MatchedRouteInfo.MatchedRoute = Current.Route
+	MatchedRouteInfo.MatchedPath = CleanRoute(path.Join(opRouteParts...))
+	return MatchedRouteInfo
 }
 
 // Normalizes the given route path into a slice of route parts present in the path.
 // This function also removes any leading or trailing space and '/' before getting the route parts.
-func normalizeRoute(RoutePath string) []string {
-	RoutePath = cleanRoute(RoutePath)
+func NormalizeRoute(RoutePath string) []string {
+	RoutePath = CleanRoute(RoutePath)
 	RoutePath = strings.TrimPrefix(RoutePath, ROUTE_SEPERATOR)
+	if strings.EqualFold(RoutePath, "") {
+		return make([]string, 0)
+	}
 	RouteParts := strings.Split(RoutePath, ROUTE_SEPERATOR)
 	return RouteParts
-}
-
-// Inserts the given route path in the route tree.
-func addRouteToTree(RouteTree *prefixTreeNode, RoutePath string) {
-	RouteParts := normalizeRoute(RoutePath)
-	RouteTree.insert(RouteParts)
-}
-
-// Returns a slice of strings which represents all the routes present in the given route tree.
-func getRoutesInTree(root *prefixTreeNode) []string {
-	routes := root.getAllRoutes()
-	for index := range routes {
-		routes[index] = cleanRoute(routes[index])
-	}
-
-	return routes
-}
-
-// Match the given route path with the route tree and fetch all the path parameters.
-// This function returns the pointer to a matchRouteInfo object which contains the original route in the router and the list of all path parameter(s).
-func matchRouteInTree(root *prefixTreeNode, RoutePath string) *matchRouteInfo {
-	routeInfo := new(matchRouteInfo)
-	routeInfo.segments = make(Params)
-	origRouteParts := normalizeRoute(RoutePath)
-	finalRouteParts := make([]string, 0)
-	for next := root; next != nil; {
-		if len(next.children) > 0 {
-			isFound := false
-			for _, chd := range next.children {
-				if strings.EqualFold(origRouteParts[0], chd.value) {
-					finalRouteParts = append(finalRouteParts, origRouteParts[0])
-					if len(origRouteParts) > 1 {
-						origRouteParts = origRouteParts[1:]
-						next = chd
-						isFound = true
-					}
-					break
-				} else if strings.HasPrefix(chd.value, ":") {
-					paramName, _ := strings.CutPrefix(chd.value, ":")
-					routeInfo.segments.Add(paramName, []string { origRouteParts[0] })
-					finalRouteParts = append(finalRouteParts, chd.value)
-					if len(origRouteParts) > 1 {
-						origRouteParts = origRouteParts[1:]
-						next = chd
-						isFound = true
-					}
-					break
-				}
-			}
-
-			if !isFound {
-				break
-			}
-		} else {
-			break
-		}
-	}
-
-	finalRoutePath := path.Join(finalRouteParts...)
-	routeInfo.routePath = cleanRoute(finalRoutePath)
-	return routeInfo
-}
-
-// Recursively adds the route parts to the route tree by creating nodes in the tree for individual route parts.
-func (rtn *prefixTreeNode) insert(RouteParts []string) {
-	if len(rtn.children) == 0 {
-		// If the route node does not have any child nodes of its own
-		newNode := newRouteTreeNode(RouteParts[0])
-		rtn.children = append(rtn.children, newNode)
-		if len(RouteParts) > 1 {
-			newNode.insert(RouteParts[1:])
-		}
-	} else {
-		// If the root node has one or more child nodes
-		cnFound := false
-		var rtnNode *prefixTreeNode
-		for _, cl := range rtn.children {
-			if strings.EqualFold(RouteParts[0], cl.value) {
-				cnFound = true
-				rtnNode = cl
-				break
-			}
-		}
-
-		if !cnFound {
-			// If none of the child nodes of the root node had the first route part of the given route.
-			rtnNode = newRouteTreeNode(RouteParts[0])
-			rtn.children = append(rtn.children, rtnNode)
-			if len(RouteParts) > 1 {
-				rtnNode.insert(RouteParts[1:])
-			}
-		} else {
-			// If one of the child nodes of the root node contained the first route part of the given route.
-			if len(RouteParts) > 1 {
-				rtnNode.insert(RouteParts[1:])
-			}
-		}
-	}
-}
-
-// Gets the list of all routes from the route tree node to all the leaf nodes in the tree.
-func (rtn *prefixTreeNode) getAllRoutes() []string {
-	routeParts := make([]string, 0)
-	if len(rtn.children) != 0 {
-		for _, cn := range rtn.children {
-			childParts := cn.getAllRoutes()
-			for _, part := range childParts {
-				if rtn.value != "" {
-					routeParts = append(routeParts, path.Join(rtn.value, part))
-				} else {
-					routeParts = append(routeParts, part)
-				}
-			}
-		}
-	} else {
-		routeParts = append(routeParts, rtn.value)
-	}
-
-	return routeParts
 }
