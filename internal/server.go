@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"bufio"
@@ -89,23 +89,23 @@ func (srv *HttpServer) isClosed() bool {
 }
 
 // Creates and returns pointer to a new instance of HTTP request.
-func (srv *HttpServer) newRequest(Connection net.Conn) *HttpRequest {
+func (srv *HttpServer) NewRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
-	httpRequest.initialize()
+	httpRequest.Initialize()
 	reader := bufio.NewReader(Connection)
-	httpRequest.setReader(reader)
+	httpRequest.SetReader(reader)
 	httpRequest.ClientAddress = Connection.RemoteAddr().String()
-	httpRequest.setServer(srv)
+	httpRequest.SetServer(srv)
 	return &httpRequest
 }
 
 // Creates and returns pointer to a new instance of HTTP response.
-func (srv *HttpServer) newResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
+func (srv *HttpServer) NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.initialize(getResponseVersion(request.Version))
+	httpResponse.Initialize(GetResponseVersion(request.Version))
 	writer := bufio.NewWriter(Connection)
-	httpResponse.setWriter(writer)
-	httpResponse.setServer(srv)
+	httpResponse.SetWriter(writer)
+	httpResponse.SetServer(srv)
 	return &httpResponse
 }
 
@@ -154,8 +154,8 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 	defer ClientConnection.Close()
 
 	handleRequest := func() (int, error) {
-		httpRequest := srv.newRequest(ClientConnection)
-		err := httpRequest.read()
+		httpRequest := srv.NewRequest(ClientConnection)
+		err := httpRequest.Read()
 		if err != nil {
 			_, ok := err.(*ReadTimeoutError)
 			if err != io.EOF && !ok {
@@ -166,7 +166,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 
 		startTime := time.Now()
-		httpResponse := srv.newResponse(ClientConnection, httpRequest)
+		httpResponse := srv.NewResponse(ClientConnection, httpRequest)
 		var timeout int
 		var max int
 		connValue, ok := httpRequest.Headers.Get("Connection")
@@ -185,7 +185,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			httpResponse.Headers.Add("Keep-Alive", fmt.Sprintf("timeout=%d, max=%d", timeout, max))
 		}
 
-		if !isMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
+		if !IsMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
 			httpResponse.Status(StatusMethodNotAllowed)
 			ErrorHandler(httpRequest, httpResponse)
 		} else {
@@ -193,14 +193,14 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			if len(srv.middlewares) > 0 {
 				responseSent := srv.processMiddlewares(httpRequest, httpResponse, srv.middlewares)
 				if responseSent {
-					httpRequest.processingTime = timeSince(startTime)
+					httpRequest.ProcessingTime = TimeSince(startTime)
 					srv.logStatus(httpRequest, httpResponse)
 					return timeout, nil
 				}
 			}
 
-			// Next match the request route with the route tree to find a match.
-			matchedRoute, err := srv.innerRouter.matchRoute(httpRequest)
+			// Next match the request route with the route tree to find the corresponding route handler.
+			matchedRoute, err := srv.innerRouter.Match(httpRequest)
 			if err != nil {
 				srv.Log(err.Error(), ERROR_LEVEL)
 				httpResponse.Status(StatusNotFound)
@@ -210,7 +210,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				if len(matchedRoute.middlewares) > 0 {
 					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.middlewares)
 					if responseSent {
-						httpRequest.processingTime = timeSince(startTime)
+						httpRequest.ProcessingTime = TimeSince(startTime)
 						srv.logStatus(httpRequest, httpResponse)
 						return timeout, nil
 					}
@@ -221,7 +221,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 		}
 
-		httpRequest.processingTime = timeSince(startTime)
+		httpRequest.ProcessingTime = TimeSince(startTime)
 		srv.logStatus(httpRequest, httpResponse)
 		return timeout, nil
 	}
@@ -272,7 +272,7 @@ func (srv *HttpServer) terminate() {
 		close(terminateDone)
 	}()
 
-	srvShutTimeout := getServerDefaults("shutdown_timeout").(int)
+	srvShutTimeout := GetServerDefaults("shutdown_timeout").(int)
 
 	select {
 	case <-terminateDone:
@@ -300,25 +300,25 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, request.processingTime, responseContentLength)
+		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, request.ProcessingTime, responseContentLength)
 	} else if strings.EqualFold(srv.logFormat, TINY_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, request.processingTime)
+		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, request.ProcessingTime)
 	} else if strings.EqualFold(srv.logFormat, SHORT_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, request.processingTime)
+		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, request.ProcessingTime)
 	} else {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, getRfc1123Time(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
+		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, GetRfc1123Time(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
 	}
 }
 
@@ -333,21 +333,6 @@ func (srv *HttpServer) SetLogger(logFormat string) {
 	} else {
 		srv.logFormat = COMMON_LOGGER
 	}
-}
-
-// Define a static route and map to a static file or folder in the file system.
-func (srv *HttpServer) Static(Route string, TargetPath string) error {
-	err := srv.innerRouter.addStaticRoute("GET", Route, TargetPath)
-	if err != nil {
-		return err
-	}
-
-	err = srv.innerRouter.addStaticRoute("HEAD", Route, TargetPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Adds a server level middleware to the server instance.
@@ -382,97 +367,9 @@ func (srv * HttpServer) Listen() {
 	close(sigChan)
 }
 
-// Creates a new GET endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Get(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("GET", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new HEAD endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Head(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("HEAD", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new POST endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Post(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("POST", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new PUT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Put(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("PUT", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new DELETE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Delete(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("DELETE", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new TRACE endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Trace(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("TRACE", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new OPTIONS endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Options(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("OPTIONS", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Creates a new CONNECT endpoint at the given route path and sets the handler function to be invoked when the route is requested by the user.
-func (srv *HttpServer) Connect(routePath string, handlerFunc RouteHandler, middlewareList ...Middleware) error {
-	routePath = strings.TrimSpace(routePath)
-	err := srv.innerRouter.addDynamicRoute("CONNECT", routePath, handlerFunc, middlewareList)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Logs the given message and classification to the server log stream.
 func (srv *HttpServer) Log(message string, level string) {
-	currentTime := getRfc1123Time()
-	serverName := getServerDefaults("server_name").(string)
+	currentTime := GetRfc1123Time()
+	serverName := GetServerDefaults("server_name").(string)
 	srv.requestLogger.Printf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
 }

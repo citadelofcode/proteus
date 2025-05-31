@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ import (
 func newTestResponse(t testing.TB, version string) *HttpResponse {
 	t.Helper()
 	testRes := new(HttpResponse)
-	testRes.initialize(version)
-	testRes.setServer(NewServer("", 0))
+	testRes.Initialize(version)
+	testRes.SetServer(NewServer("", 0))
 	return testRes
 }
 
@@ -63,15 +63,15 @@ func Test_Response_Write(t *testing.T) {
 			res := newTestResponse(tt, testCase.IpVersion)
 			var opBuffer bytes.Buffer
 			writer := bufio.NewWriter(&opBuffer)
-			res.setWriter(writer)
-			res.bodyBytes = []byte(testCase.IpContent)
+			res.SetWriter(writer)
+			res.BodyBytes = []byte(testCase.IpContent)
 			if !strings.EqualFold(testCase.IpVersion, "0.9") {
 				res.AddHeader("Content-Type", testCase.IpContentType)
-				res.AddHeader("Content-Length", strconv.Itoa(len(res.bodyBytes)))
+				res.AddHeader("Content-Length", strconv.Itoa(len(res.BodyBytes)))
 				res.Status(testCase.IpStatus)
 			}
 
-			err := res.write()
+			err := res.Write()
 
 			if testCase.ExpErr == "" {
 				if err != nil {

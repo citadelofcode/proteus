@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"strings"
@@ -12,7 +12,7 @@ type RouteHandler func (*HttpRequest, *HttpResponse)
 var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
 	targetFilePath := request.staticFilePath
 	targetFilePath = strings.TrimSpace(targetFilePath)
-	isCondGet, err := request.isConditionalGet(targetFilePath)
+	isCondGet, err := request.IsConditionalGet(targetFilePath)
 	if err != nil {
 		request.Server.Log(err.Error(), ERROR_LEVEL)
 	}
@@ -40,7 +40,7 @@ var ErrorHandler = func (request *HttpRequest, response *HttpResponse) {
 	}
 
 	if response.StatusCode == int(StatusMethodNotAllowed) {
-		response.Headers.Add("Allow", getAllowedMethods(response.Version))
+		response.Headers.Add("Allow", GetAllowedMethods(response.Version))
 	}
 
 	statusCode := StatusCode(response.StatusCode)

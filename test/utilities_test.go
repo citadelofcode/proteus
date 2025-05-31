@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"strings"
@@ -18,7 +18,7 @@ func Test_GetHighestVersion(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			maxVersion := getHighestVersion(testCase.InputVersion)
+			maxVersion := GetHighestVersion(testCase.InputVersion)
 			if strings.EqualFold(maxVersion, testCase.ExpVersion) {
 				tt.Logf("The expected version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, maxVersion)
 			} else {
@@ -41,7 +41,7 @@ func Test_GetResponseVersion(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			responseVersion := getResponseVersion(testCase.InputVersion)
+			responseVersion := GetResponseVersion(testCase.InputVersion)
 			if strings.EqualFold(responseVersion, testCase.ExpVersion) {
 				tt.Logf("The expected response version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, responseVersion)
 			} else {

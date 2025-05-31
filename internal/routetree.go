@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"strings"
@@ -12,7 +12,24 @@ type MatchInfo struct {
 	// The matched route in the prefix tree.
 	MatchedPath string
 	// Route instance associated with the given path.
-	MatchedRoute *Route
+	MatchedRoutes []*Route
+}
+
+// Adds a route instance to the routes list of the MatchInfo instance
+func (mi *MatchInfo) AddToRoutes(routes []*Route) {
+	if mi.MatchedRoutes == nil {
+		mi.MatchedRoutes = make([]*Route, 0)
+	}
+	mi.MatchedRoutes = append(mi.MatchedRoutes, routes...)
+}
+
+// Creates a new MatchInfo instance and returns a reference to the instance.
+func newMatchInfo() *MatchInfo {
+	mi := new(MatchInfo)
+	mi.Segments = make(Params)
+	mi.MatchedPath = ""
+	mi.MatchedRoutes = nil
+	return mi
 }
 
 // Structure to represent each individual node of the prefix tree (trie tree).
@@ -20,13 +37,21 @@ type PrefixTreeNode struct {
 	// Child elements to the current node stored as a map.
 	Children map[string]*PrefixTreeNode
 	// Route instance mapped to the current node. Default value is nil.
-	Route *Route
+	Routes []*Route
+}
+
+// Adds a route instance to the routes list of the prefix tree node.
+func (ptn *PrefixTreeNode) AddToRoutes(route *Route) {
+	if ptn.Routes == nil {
+		ptn.Routes = make([]*Route, 0)
+	}
+	ptn.Routes = append(ptn.Routes, route)
 }
 
 // Creates and returns pointer to a new node in the prefix tree.
 func NewPrefixTreeNode() *PrefixTreeNode {
 	newNode := new(PrefixTreeNode)
-	newNode.Route = nil
+	newNode.Routes = nil
 	newNode.Children = make(map[string]*PrefixTreeNode)
 	return newNode
 }
@@ -48,7 +73,7 @@ func EmptyPrefixTree() *PrefixTree {
 func (pt *PrefixTree) Insert(RoutePath string, MappedRoute *Route) {
 	RouteParts := NormalizeRoute(RoutePath)
 	if len(RouteParts) == 0 {
-		pt.Root.Route = MappedRoute
+		pt.Root.AddToRoutes(MappedRoute)
 		return
 	}
 	Current := pt.Root
@@ -58,7 +83,7 @@ func (pt *PrefixTree) Insert(RoutePath string, MappedRoute *Route) {
 		}
 		Current = Current.Children[part]
 	}
-	Current.Route = MappedRoute
+	Current.AddToRoutes(MappedRoute)
 }
 
 // Get all the routes available in the prefix tree.
@@ -66,7 +91,7 @@ func (pt *PrefixTree) GetAllRoutes() []string {
 	routes := make([]string, 0)
 	var traverse func(*PrefixTreeNode, string)
 	traverse = func(CurrentNode *PrefixTreeNode, RoutePath string) {
-		if CurrentNode.Route != nil {
+		if CurrentNode.Routes != nil {
 			routes = append(routes, RoutePath)
 		}
 		for part, NextNode := range CurrentNode.Children {
@@ -82,12 +107,11 @@ func (pt *PrefixTree) GetAllRoutes() []string {
 
 // Find a match for the given route in the prefix tree.
 func (pt *PrefixTree) Match(RoutePath string) *MatchInfo {
-	MatchedRouteInfo := new(MatchInfo)
-	MatchedRouteInfo.Segments = make(Params)
+	MatchedRouteInfo := newMatchInfo()
 	ipRouteParts := NormalizeRoute(RoutePath)
 	if len(ipRouteParts) == 0 {
 		MatchedRouteInfo.MatchedPath = ROUTE_SEPERATOR
-		MatchedRouteInfo.MatchedRoute = pt.Root.Route
+		MatchedRouteInfo.AddToRoutes(pt.Root.Routes)
 		return MatchedRouteInfo
 	}
 	opRouteParts := make([]string, 0)
@@ -107,7 +131,7 @@ func (pt *PrefixTree) Match(RoutePath string) *MatchInfo {
 				}
 			}
 			if !hasBeenFound {
-				MatchedRouteInfo.MatchedRoute = nil
+				MatchedRouteInfo.MatchedRoutes = nil
 				MatchedRouteInfo.MatchedPath = ""
 				return MatchedRouteInfo
 			}
@@ -116,7 +140,7 @@ func (pt *PrefixTree) Match(RoutePath string) *MatchInfo {
 			Current = Next
 		}
 	}
-	MatchedRouteInfo.MatchedRoute = Current.Route
+	MatchedRouteInfo.AddToRoutes(Current.Routes)
 	MatchedRouteInfo.MatchedPath = CleanRoute(path.Join(opRouteParts...))
 	return MatchedRouteInfo
 }

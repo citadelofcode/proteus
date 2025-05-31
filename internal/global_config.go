@@ -1,4 +1,4 @@
-package http
+package internal
 
 const (
 	ERROR_MSG_CONTENT_TYPE = "text/html"

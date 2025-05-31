@@ -35,26 +35,6 @@ server.Listen(8080, "localhost")
 
 The **Listen()** method accepts two arguments - the port number where the server will listen for incoming requests and the hostname of the machine where the server instance is running.
 
-To create static directory in the web server instance, use the following code.
-
-```go
-server.Static("/files/static", **TargetDirectoryPath**)
-```
-
-To declare a custom route and its associated handler function, refer to the following code snippet.
-
-```go
-server.Get("/user/:name", func(req *proteus.HttpRequest, res *proteus.HttpResponse) error {
-    names, _ := req.Segments.Get("name")
-    server.LogInfo(fmt.Sprintf("The name value in the path is %s\n", strings.Join(names, ",")))
-    res.Status(http.StatusOK)
-    res.Send("The name parameter value received is: " + strings.Join(names, ", "))
-    return nil
-})
-```
-
-The handler function must accept two parameters - reference to an instance each of `proteus.HttpRequest` and  `proteus.HttpResponse`. It must return an error.
-
 ## HTTP Version Compatibility
 
 The `proteus` web server supports the below HTTP versions.

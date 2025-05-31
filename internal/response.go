@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"bufio"
@@ -21,7 +21,7 @@ type HttpResponse struct {
 	// Collection of all response headers being sent by the server.
 	Headers Headers
 	// Complete contents of the response body as a stream of bytes.
-	bodyBytes []byte
+	BodyBytes []byte
 	// Streamed writer instance to write the response bytes to the network stream.
 	writer *bufio.Writer
 	// The server instance processing this response.
@@ -29,7 +29,7 @@ type HttpResponse struct {
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
-func (res *HttpResponse) initialize(version string) {
+func (res *HttpResponse) Initialize(version string) {
 	version = strings.TrimSpace(version)
 	if version == "" {
 		res.Version = "0.9"
@@ -39,15 +39,17 @@ func (res *HttpResponse) initialize(version string) {
 	res.Headers = make(Headers)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
+	res.writer = nil
+	res.Server = nil
 }
 
 // // Assigns the stream writer field of HttpResponse with a valid response stream.
-func (res *HttpResponse) setWriter(writer *bufio.Writer) {
+func (res *HttpResponse) SetWriter(writer *bufio.Writer) {
 	res.writer = writer
 }
 
 // Sets the server field to the given server instance reference.
-func (res *HttpResponse) setServer(serverRef *HttpServer) {
+func (res *HttpResponse) SetServer(serverRef *HttpServer) {
 	res.Server = serverRef
 }
 
@@ -55,7 +57,7 @@ func (res *HttpResponse) setServer(serverRef *HttpServer) {
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addGeneralHeaders() {
 	if !strings.EqualFold(res.Version, "0.9") {
-		res.Headers.Add("Date", getRfc1123Time())
+		res.Headers.Add("Date", GetRfc1123Time())
 	}
 }
 
@@ -63,12 +65,12 @@ func (res *HttpResponse) addGeneralHeaders() {
 // Headers are added only if the given HttpResponse object is not a test instance and the response version is not HTTP/0.9.
 func (res *HttpResponse) addResponseHeaders() {
 	if !strings.EqualFold(res.Version, "0.9") {
-		res.Headers.Add("Server", getServerDefaults("server_name").(string))
+		res.Headers.Add("Server", GetServerDefaults("server_name").(string))
 	}
 }
 
 // Writes bytes of data to response byte stream from the HttpResponse instance.
-func (res *HttpResponse) write() error {
+func (res *HttpResponse) Write() error {
 	if res.writer == nil {
 		resErr := new(ResponseError)
 		resErr.Section = "RespWrite"
@@ -167,13 +169,13 @@ func (res *HttpResponse) writeHeaders() error {
 
 // Writes the response body to the response byte stream.
 func (res *HttpResponse) writeBody() error {
-	if len(res.bodyBytes) > 0 {
+	if len(res.BodyBytes) > 0 {
 		ContentType, exists := res.Headers.Get("Content-Type")
 		if exists {
 			ContentType = strings.TrimSpace(ContentType)
 			ContentType = strings.ToLower(ContentType)
 			if strings.HasPrefix(ContentType, "text") {
-				_, err := res.writer.WriteString(string(res.bodyBytes))
+				_, err := res.writer.WriteString(string(res.BodyBytes))
 				if err != nil {
 					resErr := new(ResponseError)
 					resErr.Section = "Body"
@@ -182,7 +184,7 @@ func (res *HttpResponse) writeBody() error {
 					return resErr
 				}
 			} else {
-				_, err := res.writer.Write(res.bodyBytes)
+				_, err := res.writer.Write(res.BodyBytes)
 				if err != nil {
 					resErr := new(ResponseError)
 					resErr.Section = "Body"
@@ -192,7 +194,7 @@ func (res *HttpResponse) writeBody() error {
 				}
 			}
 		} else {
-			_, err := res.writer.Write(res.bodyBytes)
+			_, err := res.writer.Write(res.BodyBytes)
 			if err != nil {
 				resErr := new(ResponseError)
 				resErr.Section = "Body"
@@ -209,7 +211,7 @@ func (res *HttpResponse) writeBody() error {
 // Adds a new key-value pair to the request headers collection.
 func (res *HttpResponse) AddHeader(HeaderKey string, HeaderValue string) {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
-		isValid, _ := isHttpDate(HeaderValue)
+		isValid, _ := IsHttpDate(HeaderValue)
 		if isValid {
 			res.Headers.Add(HeaderKey, HeaderValue)
 		} else {
@@ -245,10 +247,10 @@ func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) er
 	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
 	res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
 	if !OnlyMetadata {
-		res.bodyBytes = file.Contents
+		res.BodyBytes = file.Contents
 	}
 
-	return res.write()
+	return res.Write()
 }
 
 // Sends a the given error content as response back to the client.
@@ -256,21 +258,21 @@ func (res *HttpResponse) SendError(Content string) error {
 	responseContent := []byte(Content)
 	res.Headers.Add("Content-Type", ERROR_MSG_CONTENT_TYPE)
 	res.Headers.Add("Content-Length", strconv.Itoa(len(responseContent)))
-	res.bodyBytes = responseContent
-	return res.write()
+	res.BodyBytes = responseContent
+	return res.Write()
 }
 
 // Send the given string as response back to the client.
 func (res *HttpResponse) Send(content string) error {
 	_, ok := res.Headers.Get("Content-Type")
 	if !ok {
-		fileMediaType := getServerDefaults("content_type").(string)
+		fileMediaType := GetServerDefaults("content_type").(string)
 		res.Headers.Add("Content-Type", fileMediaType)
 	}
 
 	content = strings.TrimSpace(content)
 	contentBuffer := []byte(content)
 	res.Headers.Add("Content-Length", strconv.Itoa(len(contentBuffer)))
-	res.bodyBytes = contentBuffer
-	return res.write()
+	res.BodyBytes = contentBuffer
+	return res.Write()
 }

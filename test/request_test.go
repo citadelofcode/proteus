@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"bufio"
@@ -11,8 +11,8 @@ import (
 func newTestRequest(t testing.TB) *HttpRequest {
 	t.Helper()
 	testReq := new(HttpRequest)
-	testReq.initialize()
-	testReq.setServer(NewServer("", 0))
+	testReq.Initialize()
+	testReq.SetServer(NewServer("", 0))
 	return testReq
 }
 
@@ -36,8 +36,8 @@ func Test_Request_Read(t *testing.T) {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			testReq := newTestRequest(tt)
 			stringReader := strings.NewReader(testCase.InputRequest)
-			testReq.setReader(bufio.NewReader(stringReader))
-			err := testReq.read()
+			testReq.SetReader(bufio.NewReader(stringReader))
+			err := testReq.Read()
 			if err != nil && err != io.EOF {
 				tt.Errorf("The given request could not be parsed. Error :: %s", err.Error())
 				return

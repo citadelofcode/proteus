@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"bufio"
@@ -155,7 +155,7 @@ func GetContentType(CompleteFilePath string) (string, error) {
 		if exists {
 			return contentType, nil
 		} else {
-			defaultContentType := getServerDefaults("content_type").(string)
+			defaultContentType := GetServerDefaults("content_type").(string)
 			return strings.TrimSpace(defaultContentType), nil
 		}
 	}

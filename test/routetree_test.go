@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"slices"
@@ -39,7 +39,7 @@ func Test_RoutePathNormalization(t *testing.T) {
 // Test case to validate if an empty route tree is being created correctly.
 func Test_RouteTree_Create(t *testing.T) {
 	pt := EmptyPrefixTree()
-	if pt.Root.Route != nil {
+	if pt.Root.Routes != nil {
 		t.Errorf("No route instance must be mapped to the root node of an empty prefix tree")
 	} else {
 		t.Logf("No route instance has been mapped to the root node of the empty prefix tree as expected")
@@ -95,7 +95,6 @@ func Test_RouteTree_MatchRoute(t *testing.T) {
 	pt := EmptyPrefixTree()
 	pt.Insert("/users/list-all", new(Route))
 	pt.Insert("/users/:userId/get_name", new(Route))
-	pt.Insert("/files/static", new(Route))
 
 	testCases := []struct {
 		Name string
@@ -105,7 +104,6 @@ func Test_RouteTree_MatchRoute(t *testing.T) {
 	} {
 		{ "Request Route Path with no path parameters", "/users/list-all", "/users/list-all", 0 },
 		{ "Request Route Path with a single path parameter", "/users/6/get_name", "/users/:userId/get_name", 1 },
-		{ "Request route for a static resource", "/files/static/proteus/index.html", "/files/static", 0 },
 		{ "Request route without a match in the prefix tree", "/favicon.ico", "", 0 },
 	}
 

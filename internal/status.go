@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"bytes"
@@ -74,7 +74,7 @@ func (code StatusCode) GetErrorContent() string {
 					<p>{{.ErrorDescription}}</p>
 					</body>
 				</html>`
-	
+
 	for _, stat := range ResponseStatusCodes {
 		if code == stat.Code {
 			temp, err := template.New("errorResponse").Parse(htmlTemplate)

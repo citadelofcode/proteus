@@ -1,4 +1,4 @@
-package http
+package internal
 
 // Function used to update if subsequent middlewares in the stack have to be processed before a response can be sent back to the client.
 type StopFunction func()

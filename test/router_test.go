@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"testing"
@@ -11,13 +11,12 @@ func Test_Router_AddStaticRoute(t *testing.T) {
 	testRouter := NewRouter()
 	testCases := []struct {
 		Name string
-		InputMethod string
 		InputRoute string
 		TargetPath string
 		ExpectedErr string
 	} {
-		{ "Valid route with valid target folder path", "GET", "/files/static", "../assets", "" },
-		{ "Valid route with a target file path", "GET", "/files/staticone", "../assets/index.html", "RoutingError" },
+		{ "Valid route with valid target folder path", "/files/static", "../assets", "" },
+		{ "Valid route with a target file path", "/files/staticone", "../assets/index.html", "RoutingError" },
 	}
 
 	_, CurrentFilePath, _, _ := runtime.Caller(0)
@@ -29,7 +28,7 @@ func Test_Router_AddStaticRoute(t *testing.T) {
 			if !isAbsolutePath {
 				testCaseTargetPath = filepath.Join(filepath.Dir(CurrentFilePath), testCaseTargetPath)
 			}
-			err := testRouter.addStaticRoute(testCase.InputMethod, testCase.InputRoute, testCaseTargetPath)
+			err := testRouter.Static(testCase.InputRoute, testCaseTargetPath)
 			if testCase.ExpectedErr == "" {
 				if err != nil {
 					tt.Errorf("Was not expecting an error for adding static route to router and yet got this instead - %v", err)

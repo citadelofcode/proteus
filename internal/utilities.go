@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"fmt"
@@ -12,14 +12,14 @@ import (
 )
 
 // Returns the value for the given key from server default configuration values.
-func getServerDefaults(key string) any {
+func GetServerDefaults(key string) any {
 	key = strings.TrimSpace(key)
 	value := ServerDefaults[key]
 	return value
 }
 
 // Gets the highest version of HTTP supported by the web server that is less than the given request version.
-func getHighestVersion(requestVersion string) string {
+func GetHighestVersion(requestVersion string) string {
 	var maxVersion float64 = 0.0
 	requestVersion = strings.TrimSpace(requestVersion)
 	reqVer, _ := strconv.ParseFloat(requestVersion, 64)
@@ -36,7 +36,7 @@ func getHighestVersion(requestVersion string) string {
 }
 
 // Gets an array of all the versions of HTTP supported by the web server.
-func getAllVersions() []string {
+func GetAllVersions() []string {
 	vers := make([]string, 0)
 	for versionNo := range Versions {
 		tempVer := strings.TrimSpace(versionNo)
@@ -47,7 +47,7 @@ func getAllVersions() []string {
 }
 
 // Gets the list of allowed HTTP methods supported by the web server for the given HTTP version.
-func getAllowedMethods(version string) string {
+func GetAllowedMethods(version string) string {
 	for versionNo, AllowedMethods := range Versions {
 		if strings.EqualFold(versionNo, version) {
 			return strings.Join(AllowedMethods, ", ")
@@ -58,7 +58,7 @@ func getAllowedMethods(version string) string {
 }
 
 // Checks if the given HTTP method is supported by the web server for the given version.
-func isMethodAllowed(version string, requestMethod string) bool {
+func IsMethodAllowed(version string, requestMethod string) bool {
 	for versionNo, AllowedMethods := range Versions {
 		if strings.EqualFold(versionNo, version) && slices.Contains(AllowedMethods, requestMethod) {
 			return true
@@ -69,10 +69,10 @@ func isMethodAllowed(version string, requestMethod string) bool {
 }
 
 // Returns the HTTP response version for the given request version value.
-func getResponseVersion(requestVersion string) string {
+func GetResponseVersion(requestVersion string) string {
 	isCompatible := false
 
-	for _, version := range getAllVersions() {
+	for _, version := range GetAllVersions() {
 		if strings.EqualFold(version, requestVersion) {
 			isCompatible = true
 			break
@@ -82,12 +82,12 @@ func getResponseVersion(requestVersion string) string {
 	if isCompatible {
 		return requestVersion
 	} else {
-		return getHighestVersion(requestVersion)
+		return GetHighestVersion(requestVersion)
 	}
 }
 
 // Returns the current UTC time in RFC 1123 format.
-func getRfc1123Time() string {
+func GetRfc1123Time() string {
 	currentTime := time.Now().UTC()
 	return currentTime.Format(time.RFC1123)
 }
@@ -95,7 +95,7 @@ func getRfc1123Time() string {
 // Checks if the given date time value corresponds to a valid HTTP date and returns two values.
 // First returned is a boolean value which indicates if the given date value conforms to a valid format.
 // Second returned is a time.Time value corresponding to the given string and if its invalid, returns the zero time.
-func isHttpDate(value string) (bool, time.Time) {
+func IsHttpDate(value string) (bool, time.Time) {
 	rfc1123Time, err := time.Parse(time.RFC1123, value)
 	ansicTime, errOne := time.Parse(time.ANSIC, value)
 	rfc850Time, errTwo := time.Parse(time.RFC850, value)
@@ -112,7 +112,7 @@ func isHttpDate(value string) (bool, time.Time) {
 }
 
 // Calculate the number of milliseconds elapsed since given time.
-func timeSince(start time.Time) int64 {
+func TimeSince(start time.Time) int64 {
 	durationSince := time.Since(start)
 	return durationSince.Milliseconds()
 }
@@ -137,14 +137,14 @@ func CleanRoute(RoutePath string) string {
 func NewServer(HostAddress string, PortNumber int) *HttpServer {
 	server := new(HttpServer)
 	if strings.TrimSpace(HostAddress) == "" {
-		defaultHost := getServerDefaults("hostname").(string)
+		defaultHost := GetServerDefaults("hostname").(string)
 		server.HostAddress = strings.TrimSpace(defaultHost)
 	} else {
 		server.HostAddress = strings.TrimSpace(HostAddress)
 	}
 
 	if PortNumber == 0 {
-		defaultPort := getServerDefaults("port").(int)
+		defaultPort := GetServerDefaults("port").(int)
 		server.PortNumber = defaultPort
 	} else {
 		server.PortNumber = PortNumber

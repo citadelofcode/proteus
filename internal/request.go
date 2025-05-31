@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"bufio"
@@ -23,7 +23,7 @@ type HttpRequest struct {
 	// Collection of all the request headers received.
 	Headers Headers
 	// Represents the complete contents of the request body as a stream of bytes.
-	bodyBytes []byte
+	BodyBytes []byte
 	// Total length of the request body (in bytes).
 	ContentLength int
 	// Streamed reader instance to read the HTTP request from the network stream.
@@ -31,7 +31,7 @@ type HttpRequest struct {
 	// Contains the target file path in case the request is for a static file.
 	staticFilePath string
 	// Total time taken in milliseconds to process the request.
-	processingTime int64
+	ProcessingTime int64
 	// Collection of all query parameters stored as key-values pair.
 	Query Params
 	// Collection of all path parameter values stored as key-value pair.
@@ -43,28 +43,30 @@ type HttpRequest struct {
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields.
-func (req *HttpRequest) initialize() {
-	req.bodyBytes = make([]byte, 0)
+func (req *HttpRequest) Initialize() {
+	req.BodyBytes = make([]byte, 0)
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.staticFilePath = ""
-	req.processingTime = 0
+	req.ProcessingTime = 0
 	req.Query = make(Params)
 	req.Segments = make(Params)
+	req.reader = nil
+	req.Server = nil
 }
 
 // Assigns the stream reader field of HttpRequest with a valid request stream.
-func (req *HttpRequest) setReader(reader *bufio.Reader) {
+func (req *HttpRequest) SetReader(reader *bufio.Reader) {
 	req.reader = reader
 }
 
 // Sets the server field to the given server instance reference.
-func (req *HttpRequest) setServer(serverRef *HttpServer) {
+func (req *HttpRequest) SetServer(serverRef *HttpServer) {
 	req.Server = serverRef
 }
 
 // Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.
-func (req *HttpRequest) read() error {
+func (req *HttpRequest) Read() error {
 	err := req.readHeader()
 	if err != nil {
 		return err
@@ -176,7 +178,7 @@ func (req *HttpRequest) readHeader() error {
 // Reads the body from request byte stream and stores them in the HttpRequest instance.
 func (req *HttpRequest) readBody() error {
 	if req.ContentLength > 0 {
-		req.bodyBytes = make([]byte, req.ContentLength)
+		req.BodyBytes = make([]byte, req.ContentLength)
 		for index := range req.ContentLength{
 			bodyByte, err := req.reader.ReadByte()
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
@@ -188,7 +190,7 @@ func (req *HttpRequest) readBody() error {
 				reqError.Message = err.Error()
 				return reqError
 			}
-			req.bodyBytes[index] = bodyByte
+			req.BodyBytes[index] = bodyByte
 		}
 	}
 
@@ -221,7 +223,7 @@ func (req *HttpRequest) parseQueryParams() error {
 }
 
 // Checks if the given HTTP GET request made is a CONDITIONAL GET request.
-func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) {
+func (req *HttpRequest) IsConditionalGet(CompleteFilePath string) (bool, error) {
 	if !strings.EqualFold(req.Method, "GET") {
 		return false, nil
 	}
@@ -242,7 +244,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 	}
 
 	LastModifiedString = strings.TrimSpace(LastModifiedString)
-	isValid, LastModifiedSince := isHttpDate(LastModifiedString)
+	isValid, LastModifiedSince := IsHttpDate(LastModifiedString)
 	if !isValid {
 		reqError := new(RequestParseError)
 		reqError.Section = "Header"
@@ -261,7 +263,7 @@ func (req *HttpRequest) isConditionalGet(CompleteFilePath string) (bool, error) 
 // Adds a new key-value pair to the request headers collection.
 func (req *HttpRequest) AddHeader(HeaderKey string, HeaderValue string) {
 	if slices.Contains(DateHeaders, textproto.CanonicalMIMEHeaderKey(HeaderKey)) {
-		isValid, _ := isHttpDate(HeaderValue)
+		isValid, _ := IsHttpDate(HeaderValue)
 		if isValid {
 			req.Headers.Add(HeaderKey, HeaderValue)
 		} else {
