@@ -1,4 +1,4 @@
-package http
+package internal
 
 const (
 	ERROR_MSG_CONTENT_TYPE = "text/html"
@@ -6,9 +6,32 @@ const (
 	REQUEST_LINE_SEPERATOR = " "
 	HEADER_KEY_VALUE_SEPERATOR = ":"
 	ROUTE_SEPERATOR = "/"
+
+	// Informational data logged to the terminal.
 	INFO_LEVEL = "INFO"
+	// Error data logged to the terminal.
 	ERROR_LEVEL = "ERROR"
+	// Warning(s) logged to the terminal.
 	WARN_LEVEL = "WARNING"
+
+	// This is the default format in which request status is logged to the terminal.
+	// This follows the common Apache log format which is as follows:
+	//
+	// :remote-addr [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length]
+	COMMON_LOGGER = "common"
+	// Concise output colored by response status for development use.
+	// The :status token will be colored green for success codes, red for server error codes, yellow for client error codes, cyan for redirection codes, and uncolored for information codes.
+	//
+	// :method :url :status :response-time ms - :res[content-length]
+	DEV_LOGGER = "dev"
+	// The minimal output.
+	//
+	// :method :url :status :res[content-length] - :response-time ms
+	TINY_LOGGER = "tiny"
+	// Shorter than default, also including response time.
+	//
+	// :remote-addr :method :url HTTP/:http-version :status :res[content-length] - :response-time ms
+	SHORT_LOGGER = "short"
 )
 
 // Collection of headers supported by the server that has a date value.

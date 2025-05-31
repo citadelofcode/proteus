@@ -1,9 +1,9 @@
-package http
+package internal
 
 // Function used to update if subsequent middlewares in the stack have to be processed before a response can be sent back to the client.
 type StopFunction func()
 // A function to execute operations like validations and transformations before before performing the backend tasks.
-type Middleware func(*HttpRequest, *HttpResponse, StopFunction) error
+type Middleware func(*HttpRequest, *HttpResponse, StopFunction)
 
 // Structure to hold and process one or more middlewares.
 // Middlewares are executed in the order in which they were defined.

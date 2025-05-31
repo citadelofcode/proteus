@@ -1,4 +1,4 @@
-package http
+package test
 
 import (
 	"bytes"
@@ -12,7 +12,8 @@ import (
 func newTestResponse(t testing.TB, version string) *HttpResponse {
 	t.Helper()
 	testRes := new(HttpResponse)
-	testRes.initialize(version, true)
+	testRes.Initialize(version)
+	testRes.SetServer(NewServer("", 0))
 	return testRes
 }
 
@@ -24,34 +25,16 @@ func Test_Response_AddHeader(t *testing.T) {
 		InputHeaderKey string
 		InputHeaderValue string
 		ExpHdrCount int
-		ExpectedErrType string
 	} {
-		{ "A non-date header field", "Content-Type", "application/pdf", 1, "" },
-		{ "A date header field with value in ANSIC format", "Date", "Sun Nov  6 08:49:37 1994", 2, "" },
-		{ "A date header field with value in RFC 1123 format", "Last-Modified", "Mon, 30 Jun 2008 11:05:30 GMT", 3, "" },
-		{ "A date header field with invalid date value", "If-Modified-Since", "2024-12-11T12:34:56Z" ,3, "ResponseError" },
+		{ "A non-date header field", "Content-Type", "application/pdf", 1 },
+		{ "A date header field with value in ANSIC format", "Date", "Sun Nov  6 08:49:37 1994", 2},
+		{ "A date header field with value in RFC 1123 format", "Last-Modified", "Mon, 30 Jun 2008 11:05:30 GMT", 3},
+		{ "A date header field with invalid date value", "If-Modified-Since", "2024-12-11T12:34:56Z" ,3 },
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			err := testResponse.AddHeader(testCase.InputHeaderKey, testCase.InputHeaderValue)
-			if testCase.ExpectedErrType == "" {
-				if err != nil {
-					tt.Errorf("Was not expecting an error and yet received one - %v", err)
-					return
-				}
-			}
-
-			if testCase.ExpectedErrType == "ResponseError" {
-				rpErr, ok := err.(*ResponseError)
-				if !ok {
-					tt.Errorf("Was expecting a response error, but got this instead - %v", err)
-				} else {
-					tt.Logf("Received a response error - %v as expected", rpErr)
-				}
-				return
-			}
-
+			testResponse.AddHeader(testCase.InputHeaderKey, testCase.InputHeaderValue)
 			if testResponse.Headers.Length() != testCase.ExpHdrCount {
 				tt.Errorf("The response header count - %d does not match the expected header count - %d", testResponse.Headers.Length(), testCase.ExpHdrCount)
 			} else {
@@ -80,15 +63,15 @@ func Test_Response_Write(t *testing.T) {
 			res := newTestResponse(tt, testCase.IpVersion)
 			var opBuffer bytes.Buffer
 			writer := bufio.NewWriter(&opBuffer)
-			res.setWriter(writer)
-			res.bodyBytes = []byte(testCase.IpContent)
+			res.SetWriter(writer)
+			res.BodyBytes = []byte(testCase.IpContent)
 			if !strings.EqualFold(testCase.IpVersion, "0.9") {
 				res.AddHeader("Content-Type", testCase.IpContentType)
-				res.AddHeader("Content-Length", strconv.Itoa(len(res.bodyBytes)))
+				res.AddHeader("Content-Length", strconv.Itoa(len(res.BodyBytes)))
 				res.Status(testCase.IpStatus)
 			}
 
-			err := res.write()
+			err := res.Write()
 
 			if testCase.ExpErr == "" {
 				if err != nil {

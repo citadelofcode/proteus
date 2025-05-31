@@ -1,41 +1,40 @@
 package proteus
 
 import (
-	"github.com/citadelofcode/proteus/lib/http"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 const (
-	StatusOK StatusCode = http.StatusOK
-	StatusCreated StatusCode = http.StatusCreated
-	StatusAccepted StatusCode = http.StatusAccepted
-	StatusNonAuthoritative StatusCode = http.StatusNonAuthoritative
-	StatusNoContent StatusCode = http.StatusNoContent
-	StatusResetContent StatusCode = http.StatusResetContent
-	StatusPartialContent StatusCode = http.StatusPartialContent
-	StatusMultipleChoices StatusCode = http.StatusMultipleChoices
-	StatusMovedPermanently StatusCode = http.StatusMovedPermanently
-	StatusMovedTemporarily StatusCode = http.StatusMovedTemporarily
-	StatusSeeOther StatusCode = http.StatusSeeOther
-	StatusNotModified StatusCode = http.StatusNotModified
-	StatusUseProxy StatusCode = http.StatusUseProxy
-	StatusTemporaryRedirect StatusCode = http.StatusTemporaryRedirect
-	StatusBadRequest StatusCode = http.StatusBadRequest
-	StatusUnauthorized StatusCode = http.StatusUnauthorized
-	StatusPaymentRequired StatusCode = http.StatusPaymentRequired
-	StatusForbidden StatusCode = http.StatusForbidden
-	StatusNotFound StatusCode = http.StatusNotFound
-	StatusMethodNotAllowed StatusCode = http.StatusMethodNotAllowed
-	StatusNoneAcceptable StatusCode = http.StatusNoneAcceptable
-	StatusProxyAuth StatusCode = http.StatusProxyAuth
-	StatusRequestTimeout StatusCode = http.StatusRequestTimeout
-	StatusConflict StatusCode = http.StatusConflict
-	StatusGone StatusCode = http.StatusGone
-	StatusLengthMissing StatusCode = http.StatusLengthMissing
-	StatusInternalServerError StatusCode = http.StatusInternalServerError
-	StatusNotImplemented StatusCode = http.StatusNotImplemented
-	StatusBadGateway StatusCode = http.StatusBadGateway
-	StatusServiceUnavailable StatusCode = http.StatusServiceUnavailable
-	StatusGatewayTimeout StatusCode = http.StatusGatewayTimeout
-	StatusHTTPVersionNotSupported StatusCode = http.StatusHTTPVersionNotSupported
+	StatusOK StatusCode = internal.StatusOK
+	StatusCreated StatusCode = internal.StatusCreated
+	StatusAccepted StatusCode = internal.StatusAccepted
+	StatusNonAuthoritative StatusCode = internal.StatusNonAuthoritative
+	StatusNoContent StatusCode = internal.StatusNoContent
+	StatusResetContent StatusCode = internal.StatusResetContent
+	StatusPartialContent StatusCode = internal.StatusPartialContent
+	StatusMultipleChoices StatusCode = internal.StatusMultipleChoices
+	StatusMovedPermanently StatusCode = internal.StatusMovedPermanently
+	StatusMovedTemporarily StatusCode = internal.StatusMovedTemporarily
+	StatusSeeOther StatusCode = internal.StatusSeeOther
+	StatusNotModified StatusCode = internal.StatusNotModified
+	StatusUseProxy StatusCode = internal.StatusUseProxy
+	StatusTemporaryRedirect StatusCode = internal.StatusTemporaryRedirect
+	StatusBadRequest StatusCode = internal.StatusBadRequest
+	StatusUnauthorized StatusCode = internal.StatusUnauthorized
+	StatusPaymentRequired StatusCode = internal.StatusPaymentRequired
+	StatusForbidden StatusCode = internal.StatusForbidden
+	StatusNotFound StatusCode = internal.StatusNotFound
+	StatusMethodNotAllowed StatusCode = internal.StatusMethodNotAllowed
+	StatusNoneAcceptable StatusCode = internal.StatusNoneAcceptable
+	StatusProxyAuth StatusCode = internal.StatusProxyAuth
+	StatusRequestTimeout StatusCode = internal.StatusRequestTimeout
+	StatusConflict StatusCode = internal.StatusConflict
+	StatusGone StatusCode = internal.StatusGone
+	StatusLengthMissing StatusCode = internal.StatusLengthMissing
+	StatusInternalServerError StatusCode = internal.StatusInternalServerError
+	StatusNotImplemented StatusCode = internal.StatusNotImplemented
+	StatusBadGateway StatusCode = internal.StatusBadGateway
+	StatusServiceUnavailable StatusCode = internal.StatusServiceUnavailable
+	StatusGatewayTimeout StatusCode = internal.StatusGatewayTimeout
+	StatusHTTPVersionNotSupported StatusCode = internal.StatusHTTPVersionNotSupported
 )
-

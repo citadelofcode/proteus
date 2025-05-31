@@ -1,4 +1,4 @@
-package http
+package internal
 
 import (
 	"fmt"
@@ -78,5 +78,3 @@ type CustomError struct {
 func (ce *CustomError) Error() string {
 	return fmt.Sprintf("Request Response Error :: %s", ce.Message)
 }
-
-
