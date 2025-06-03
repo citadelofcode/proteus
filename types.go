@@ -21,3 +21,9 @@ type Params = internal.Params
 
 // Represents the status code of the HTTP response sent back to the client.
 type StatusCode = internal.StatusCode
+
+// Router instance to let users declare endpoints and associated handlers.
+type Router = internal.Router
+
+// Strucure to represent a single file in the local file system.
+type File = internal.File

@@ -4,6 +4,7 @@ import (
 	"github.com/citadelofcode/proteus/internal"
 )
 
+// List of HTTP response codes supported by the server.
 const (
 	StatusOK StatusCode = internal.StatusOK
 	StatusCreated StatusCode = internal.StatusCreated
@@ -37,4 +38,26 @@ const (
 	StatusServiceUnavailable StatusCode = internal.StatusServiceUnavailable
 	StatusGatewayTimeout StatusCode = internal.StatusGatewayTimeout
 	StatusHTTPVersionNotSupported StatusCode = internal.StatusHTTPVersionNotSupported
+)
+
+// Logging levels available for server logs.
+const (
+	// Informational data logged to the terminal.
+	INFO_LEVEL = internal.INFO_LEVEL
+	// Error data logged to the terminal.
+	ERROR_LEVEL = internal.ERROR_LEVEL
+	// Warning(s) logged to the terminal.
+	WARN_LEVEL = internal.WARN_LEVEL
+)
+
+// Format(s) in which the request processing logs can be generated.
+const (
+	// :remote-addr [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length]
+	COMMON_LOGGER = internal.COMMON_LOGGER
+	// :method :url :status :response-time ms - :res[content-length]
+	DEV_LOGGER = internal.DEV_LOGGER
+	// :method :url :status :res[content-length] - :response-time ms
+	TINY_LOGGER = internal.TINY_LOGGER
+	// :remote-addr :method :url HTTP/:http-version :status :res[content-length] - :response-time ms
+	SHORT_LOGGER = internal.SHORT_LOGGER
 )

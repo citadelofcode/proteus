@@ -1,17 +1,18 @@
-<img src="https://static.citadelofcode.com/proteus/logo.png" style="border-radius:50%" width="500" height="450" alt="Proteus logo">
+![Proteus Logo](https://static.citadelofcode.com/proteus/logo.png)
 
-Proteus is a versatile web server framework written using Go.
+![Go Version](https://img.shields.io/badge/go-1.22.1-blue) ![Static Badge](https://img.shields.io/badge/powered_by-Citadel_of_Code-orange)
+
+`Proteus` is a versatile web server framework written using Go.
 
 ## Testing
 
 To run all the test scripts available in the module, execute the following commands.
 
 ```bash
-go test ./lib/... -v -cover
+make test
 ```
 
-- The `-v` command line option prints all the verbose logs generated during test case execution.
-- The `-cover` command line option prints the total code coverage metrics for each package.
+For this to work, make sure you have `make` already installed in your system.
 
 ## Example Usage
 

@@ -134,7 +134,7 @@ func IsAbsolute(FilePath string) bool {
 	return filepath.IsAbs(CleanPath(FilePath))
 }
 
-// Gets the file extension of the given file path without the period (".") precending it.
+// Gets the file extension of the given file path without the period (".") preceding it.
 func GetFileExtension(CompleteFilePath string) string {
 	CompleteFilePath = CleanPath(CompleteFilePath)
 	fileExtension := filepath.Ext(CompleteFilePath)

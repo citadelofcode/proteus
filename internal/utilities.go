@@ -150,7 +150,7 @@ func NewServer(HostAddress string, PortNumber int) *HttpServer {
 		server.PortNumber = PortNumber
 	}
 
-	server.innerRouter = NewRouter()
+	server.Router = NewRouter()
 	server.requestLogger = log.New(os.Stdout, "", 0)
 	server.logFormat = COMMON_LOGGER
 	server.middlewares = make([]Middleware, 0)

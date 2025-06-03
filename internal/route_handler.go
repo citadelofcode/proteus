@@ -10,7 +10,11 @@ type RouteHandler func (*HttpRequest, *HttpResponse)
 
 // Handler to fetch static file and send the file contents as response back to the client.
 var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
-	targetFilePath := request.staticFilePath
+	targetFilePath, ok := request.Locals["StaticFilePath"].(string)
+	if !ok {
+		request.Server.Log("Static file path not available in the request instance", ERROR_LEVEL)
+		return
+	}
 	targetFilePath = strings.TrimSpace(targetFilePath)
 	isCondGet, err := request.IsConditionalGet(targetFilePath)
 	if err != nil {
