@@ -7,11 +7,10 @@ Proteus is a versatile web server framework written using Go.
 To run all the test scripts available in the module, execute the following commands.
 
 ```bash
-go test ./lib/... -v -cover
+make test
 ```
 
-- The `-v` command line option prints all the verbose logs generated during test case execution.
-- The `-cover` command line option prints the total code coverage metrics for each package.
+For this to work, make sure you have `make` already installed in your system.
 
 ## Example Usage
 

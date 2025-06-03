@@ -26,10 +26,10 @@ type HttpRequest struct {
 	BodyBytes []byte
 	// Total length of the request body (in bytes).
 	ContentLength int
+	// key-value pairs to hold variables available during the entire request lifecycle.
+	Locals map[string]any
 	// Streamed reader instance to read the HTTP request from the network stream.
 	reader *bufio.Reader
-	// Contains the target file path in case the request is for a static file.
-	staticFilePath string
 	// Total time taken in milliseconds to process the request.
 	ProcessingTime int64
 	// Collection of all query parameters stored as key-values pair.
@@ -47,7 +47,7 @@ func (req *HttpRequest) Initialize() {
 	req.BodyBytes = make([]byte, 0)
 	req.Headers = make(Headers)
 	req.Version = "0.9"
-	req.staticFilePath = ""
+	req.Locals = make(map[string]any)
 	req.ProcessingTime = 0
 	req.Query = make(Params)
 	req.Segments = make(Params)

@@ -51,8 +51,8 @@ type HttpServer struct {
 	PortNumber int
 	// Listener created and bound to the host address and port number.
 	listener net.Listener
-	// Router instance that contains all the dynamic routes and their associated handlers.
-	innerRouter *Router
+	// Router instance that contains all the routes and their associated handlers.
+	Router *Router
 	// Logger to capture request processing logs.
 	requestLogger *log.Logger
 	// Format in which the logs will be captured.
@@ -86,27 +86,6 @@ func (srv *HttpServer) isClosed() bool {
 	isClose = srv.listClosed
 	srv.limu.RUnlock()
 	return isClose
-}
-
-// Creates and returns pointer to a new instance of HTTP request.
-func (srv *HttpServer) NewRequest(Connection net.Conn) *HttpRequest {
-	var httpRequest HttpRequest
-	httpRequest.Initialize()
-	reader := bufio.NewReader(Connection)
-	httpRequest.SetReader(reader)
-	httpRequest.ClientAddress = Connection.RemoteAddr().String()
-	httpRequest.SetServer(srv)
-	return &httpRequest
-}
-
-// Creates and returns pointer to a new instance of HTTP response.
-func (srv *HttpServer) NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
-	var httpResponse HttpResponse
-	httpResponse.Initialize(GetResponseVersion(request.Version))
-	writer := bufio.NewWriter(Connection)
-	httpResponse.SetWriter(writer)
-	httpResponse.SetServer(srv)
-	return &httpResponse
 }
 
 // Processes the given set of middlewares for the request and response and returns a boolean value to confirm if the request processing has completed with a response sent back to the client.
@@ -200,7 +179,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 
 			// Next match the request route with the route tree to find the corresponding route handler.
-			matchedRoute, err := srv.innerRouter.Match(httpRequest)
+			matchedRoute, err := srv.Router.Match(httpRequest)
 			if err != nil {
 				srv.Log(err.Error(), ERROR_LEVEL)
 				httpResponse.Status(StatusNotFound)
@@ -320,6 +299,27 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 		}
 		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, GetRfc1123Time(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
 	}
+}
+
+// Creates and returns pointer to a new instance of HTTP request.
+func (srv *HttpServer) NewRequest(Connection net.Conn) *HttpRequest {
+	var httpRequest HttpRequest
+	httpRequest.Initialize()
+	reader := bufio.NewReader(Connection)
+	httpRequest.SetReader(reader)
+	httpRequest.ClientAddress = Connection.RemoteAddr().String()
+	httpRequest.SetServer(srv)
+	return &httpRequest
+}
+
+// Creates and returns pointer to a new instance of HTTP response.
+func (srv *HttpServer) NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
+	var httpResponse HttpResponse
+	httpResponse.Initialize(GetResponseVersion(request.Version))
+	writer := bufio.NewWriter(Connection)
+	httpResponse.SetWriter(writer)
+	httpResponse.SetServer(srv)
+	return &httpResponse
 }
 
 // Sets the log configuration for the server instance.

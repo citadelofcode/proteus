@@ -18,7 +18,7 @@ type Route struct {
 // Structure to hold all the routes and the associated routing logic.
 type Router struct {
 	// Prefix tree containing all the routes declared on the router.
-	RouteTree *PrefixTree
+	routeTree *PrefixTree
 	// Collection of static paths configured for the router.
 	staticRoutes map[string]string
 }
@@ -110,7 +110,7 @@ func (rtr *Router) addRoute(Method string, RoutePath string, handlerFunc RouteHa
 	}
 
 	routeObj.middlewares = append(routeObj.middlewares, middlewareList...)
-	rtr.RouteTree.Insert(RoutePath, &routeObj)
+	rtr.routeTree.Insert(RoutePath, &routeObj)
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
 				RouteAfterPrefix := strings.TrimPrefix(routePath, routeKey)
 				RouteAfterPrefix = CleanRoute(RouteAfterPrefix)
 				FinalPath := filepath.Join(TargetPath, RouteAfterPrefix)
-				request.staticFilePath = FinalPath
+				request.Locals["StaticFilePath"] = FinalPath
 				finalRoute := new(Route)
 				finalRoute.Method = request.Method
 				finalRoute.RouteHandler = StaticFileHandler
@@ -134,7 +134,7 @@ func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
 		}
 	}
 
-	routeInfo := rtr.RouteTree.Match(routePath)
+	routeInfo := rtr.routeTree.Match(routePath)
 	if routeInfo.MatchedRoutes == nil {
 		reError := new(RoutingError)
 		reError.RoutePath = routePath
@@ -162,7 +162,7 @@ func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
 // Creates a new instance of Router and returns a reference to the instance.
 func NewRouter() *Router {
 	router := new(Router)
-	router.RouteTree = EmptyPrefixTree()
+	router.routeTree = EmptyPrefixTree()
 	router.staticRoutes = make(map[string]string)
 	return router
 }
