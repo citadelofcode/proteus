@@ -6,14 +6,15 @@ import (
 	"strings"
 	"testing"
 	"bufio"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Helper function to create and return a new test instance of HttpResponse.
-func newTestResponse(t testing.TB, version string) *HttpResponse {
+func newTestResponse(t testing.TB, version string) *internal.HttpResponse {
 	t.Helper()
-	testRes := new(HttpResponse)
+	testRes := new(internal.HttpResponse)
 	testRes.Initialize(version)
-	testRes.SetServer(NewServer("", 0))
+	testRes.SetServer(internal.NewServer("", 0))
 	return testRes
 }
 
@@ -51,11 +52,11 @@ func Test_Response_Write(t *testing.T) {
 		IpVersion string
 		IpContentType string
 		IpContent string
-		IpStatus StatusCode
+		IpStatus internal.StatusCode
 		ExpErr string
 		ExpResponse string
 	} {
-		{ "Simple v0.9 Response", "0.9", "", "Hello, this is a simple response from Proteus!", StatusOK, "", "Hello, this is a simple response from Proteus!" },
+		{ "Simple v0.9 Response", "0.9", "", "Hello, this is a simple response from Proteus!", internal.StatusOK, "", "Hello, this is a simple response from Proteus!" },
 	}
 
 	for _, testCase := range testCases {
@@ -81,7 +82,7 @@ func Test_Response_Write(t *testing.T) {
 			}
 
 			if testCase.ExpErr == "ResponseError" {
-				respErr, ok := err.(*ResponseError)
+				respErr, ok := err.(*internal.ResponseError)
 				if !ok {
 					tt.Errorf("Was expecting a response error, but got this error instead - %v", err)
 				} else {

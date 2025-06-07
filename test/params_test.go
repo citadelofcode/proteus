@@ -3,11 +3,12 @@ package test
 import (
 	"testing"
 	"slices"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the working of adding new parameter to the Params collection.
 func Test_Params_Add(t *testing.T) {
-	testParams := make(Params)
+	testParams := make(internal.Params)
 	testCases := []struct {
 		Name string
 		ParamKey string
@@ -34,7 +35,7 @@ func Test_Params_Add(t *testing.T) {
 
 // Test case to validate the working of fetching the values for a 'key' from the params collection.
 func Test_Params_Get(t *testing.T) {
-	testParams := make(Params)
+	testParams := make(internal.Params)
 	testParams.Add("Name", []string{ "proteus" })
 	testCases := []struct {
 		Name string

@@ -4,11 +4,12 @@ import (
 	"testing"
 	"path/filepath"
 	"runtime"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to check the working of addStaticRoute() function of Router instance.
 func Test_Router_AddStaticRoute(t *testing.T) {
-	testRouter := NewRouter()
+	testRouter := internal.NewRouter()
 	testCases := []struct {
 		Name string
 		InputRoute string
@@ -37,7 +38,7 @@ func Test_Router_AddStaticRoute(t *testing.T) {
 			}
 
 			if testCase.ExpectedErr == "RoutingError" {
-				rtrError, ok := err.(*RoutingError)
+				rtrError, ok := err.(*internal.RoutingError)
 				if !ok {
 					tt.Errorf("Expected a routing error while adding static route to router, but got this instead - %v", err)
 				} else {

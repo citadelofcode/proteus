@@ -3,6 +3,7 @@ package test
 import (
 	"strings"
 	"testing"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the working of the getHighestVersion utility function.
@@ -18,7 +19,7 @@ func Test_GetHighestVersion(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			maxVersion := GetHighestVersion(testCase.InputVersion)
+			maxVersion := internal.GetHighestVersion(testCase.InputVersion)
 			if strings.EqualFold(maxVersion, testCase.ExpVersion) {
 				tt.Logf("The expected version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, maxVersion)
 			} else {
@@ -41,7 +42,7 @@ func Test_GetResponseVersion(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			responseVersion := GetResponseVersion(testCase.InputVersion)
+			responseVersion := internal.GetResponseVersion(testCase.InputVersion)
 			if strings.EqualFold(responseVersion, testCase.ExpVersion) {
 				tt.Logf("The expected response version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, responseVersion)
 			} else {

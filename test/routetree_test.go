@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate if a route path is being normalized into a slice of route parts correctly.
@@ -26,7 +27,7 @@ func Test_RoutePathNormalization(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			routeParts := NormalizeRoute(testCase.RoutePath)
+			routeParts := internal.NormalizeRoute(testCase.RoutePath)
 			if len(routeParts) != testCase.ExpArgCount {
 				tt.Errorf("Number of route parts (%d) does not match the expected route part count (%d)", len(routeParts), testCase.ExpArgCount)
 			} else {
@@ -38,7 +39,7 @@ func Test_RoutePathNormalization(t *testing.T) {
 
 // Test case to validate if an empty route tree is being created correctly.
 func Test_RouteTree_Create(t *testing.T) {
-	pt := EmptyPrefixTree()
+	pt := internal.EmptyPrefixTree()
 	if pt.Root.Routes != nil {
 		t.Errorf("No route instance must be mapped to the root node of an empty prefix tree")
 	} else {
@@ -54,7 +55,7 @@ func Test_RouteTree_Create(t *testing.T) {
 
 // Test case to validate the addition of a new route to the route tree and fetching all the routes present in the tree.
 func Test_RouteTree_AddNGetRoute(t *testing.T) {
-	pt := EmptyPrefixTree()
+	pt := internal.EmptyPrefixTree()
 	testCases := []struct {
 		Name string
 		RoutePath string
@@ -73,7 +74,7 @@ func Test_RouteTree_AddNGetRoute(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			pt.Insert(testCase.RoutePath, new(Route))
+			pt.Insert(testCase.RoutePath, new(internal.Route))
 			routes := pt.GetAllRoutes()
 			if slices.Contains(routes, testCase.AddedRoutePath) {
 				tt.Logf("The route %s was added successfully to the route tree.", testCase.RoutePath)
@@ -92,9 +93,9 @@ func Test_RouteTree_AddNGetRoute(t *testing.T) {
 
 // Test case to validate if a request route path is being matched correctly against the routes present in the route tree.
 func Test_RouteTree_MatchRoute(t *testing.T) {
-	pt := EmptyPrefixTree()
-	pt.Insert("/users/list-all", new(Route))
-	pt.Insert("/users/:userId/get_name", new(Route))
+	pt := internal.EmptyPrefixTree()
+	pt.Insert("/users/list-all", new(internal.Route))
+	pt.Insert("/users/:userId/get_name", new(internal.Route))
 
 	testCases := []struct {
 		Name string

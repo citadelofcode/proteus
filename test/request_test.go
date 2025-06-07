@@ -5,14 +5,15 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Helper function to create and return a new test instance of HttpRequest.
-func newTestRequest(t testing.TB) *HttpRequest {
+func newTestRequest(t testing.TB) *internal.HttpRequest {
 	t.Helper()
-	testReq := new(HttpRequest)
+	testReq := new(internal.HttpRequest)
 	testReq.Initialize()
-	testReq.SetServer(NewServer("", 0))
+	testReq.SetServer(internal.NewServer("", 0))
 	return testReq
 }
 

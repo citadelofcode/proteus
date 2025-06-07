@@ -5,6 +5,7 @@ import (
 	"testing"
 	"runtime"
 	"path/filepath"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the working of the GetPathType() function to fetch the path type for a given file system path.
@@ -15,8 +16,8 @@ func Test_GetPathType(t *testing.T) {
 		ExpectedPathType string
 		ExpectedErrorType string
 	} {
-		{ "Path pointing to a folder", "../assets", FOLDER_TYPE_PATH, "" },
-		{ "Path pointing to a file", "../assets/index.html", FILE_TYPE_PATH, "" },
+		{ "Path pointing to a folder", "../assets", internal.FOLDER_TYPE_PATH, "" },
+		{ "Path pointing to a file", "../assets/index.html", internal.FILE_TYPE_PATH, "" },
 		{ "Path pointing to neither a file nor a folder", "https://www.google.com", "", "FileSystemError" },
 	}
 	_, CurrentFilePath, _, _ := runtime.Caller(0)
@@ -28,7 +29,7 @@ func Test_GetPathType(t *testing.T) {
 			if !isAbsolutePath {
 				testCasePath = filepath.Join(filepath.Dir(CurrentFilePath), testCasePath)
 			}
-			PathType, err := GetPathType(testCasePath)
+			PathType, err := internal.GetPathType(testCasePath)
 			if testCase.ExpectedErrorType == "" {
 				if err != nil {
 					tt.Errorf("Was not expecting an error, and yet received one - %v", err)
@@ -37,7 +38,7 @@ func Test_GetPathType(t *testing.T) {
 			}
 
 			if testCase.ExpectedErrorType == "FileSystemError" {
-				fsErr, ok := err.(*FileSystemError)
+				fsErr, ok := err.(*internal.FileSystemError)
 				if !ok {
 					tt.Errorf("Expected a FileSystemError, but got %v instead", err)
 				} else {
