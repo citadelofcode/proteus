@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Structure to represent a HTTP request received by the web server.
@@ -24,14 +25,10 @@ type HttpRequest struct {
 	Headers Headers
 	// Represents the complete contents of the request body as a stream of bytes.
 	BodyBytes []byte
-	// Total length of the request body (in bytes).
-	ContentLength int
 	// key-value pairs to hold variables available during the entire request lifecycle.
 	Locals map[string]any
 	// Streamed reader instance to read the HTTP request from the network stream.
 	reader *bufio.Reader
-	// Total time taken in milliseconds to process the request.
-	ProcessingTime int64
 	// Collection of all query parameters stored as key-values pair.
 	Query Params
 	// Collection of all path parameter values stored as key-value pair.
@@ -40,6 +37,8 @@ type HttpRequest struct {
 	ClientAddress string
 	// The server instance processing this request.
 	Server *HttpServer
+	// The actual content contained by the request. The type of the data is determined at run time depending on the data sent as part of the request.
+	Body any
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields.
@@ -48,11 +47,12 @@ func (req *HttpRequest) Initialize() {
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.Locals = make(map[string]any)
-	req.ProcessingTime = 0
 	req.Query = make(Params)
 	req.Segments = make(Params)
 	req.reader = nil
 	req.Server = nil
+	req.Locals["Started"] = time.Time{}
+	req.Locals["ContentLength"] = 0
 }
 
 // Assigns the stream reader field of HttpRequest with a valid request stream.
@@ -79,7 +79,7 @@ func (req *HttpRequest) Read() error {
 
 	clength, ok := req.Headers.Get("Content-Length")
 	if ok {
-		req.ContentLength, err = strconv.Atoi(clength)
+		reqContentLength, err := strconv.Atoi(clength)
 		if err != nil {
 			reqError := new(RequestParseError)
 			reqError.Section = "Header"
@@ -88,6 +88,7 @@ func (req *HttpRequest) Read() error {
 			return reqError
 		}
 
+		req.Locals["ContentLength"] = reqContentLength
 		err = req.readBody()
 		if err != nil {
 			return err
@@ -95,6 +96,17 @@ func (req *HttpRequest) Read() error {
 	}
 
 	return nil
+}
+
+// Gets the time elapsed since request processing started (in milliseconds).
+// If start time is not available, it returns zero.
+func (req *HttpRequest) ProcessingTime() int64 {
+	Started := req.Locals["Started"].(time.Time)
+	if Started.IsZero() {
+		return 0
+	}
+	timeSinceStart := time.Since(Started)
+	return timeSinceStart.Milliseconds()
 }
 
 // Reads the values for all request headers and stores them in the HttpRequest instance.
@@ -177,9 +189,10 @@ func (req *HttpRequest) readHeader() error {
 
 // Reads the body from request byte stream and stores them in the HttpRequest instance.
 func (req *HttpRequest) readBody() error {
-	if req.ContentLength > 0 {
-		req.BodyBytes = make([]byte, req.ContentLength)
-		for index := range req.ContentLength{
+	reqContentLength := req.Locals["ContentLength"].(int)
+	if reqContentLength > 0 {
+		req.BodyBytes = make([]byte, reqContentLength)
+		for index := range reqContentLength {
 			bodyByte, err := req.reader.ReadByte()
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				return &ReadTimeoutError{}

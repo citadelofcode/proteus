@@ -26,6 +26,8 @@ type HttpResponse struct {
 	writer *bufio.Writer
 	// The server instance processing this response.
 	Server *HttpServer
+	// key-value pairs to hold variables available during the entire response lifecycle.
+	Locals map[string]any
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
@@ -37,6 +39,7 @@ func (res *HttpResponse) Initialize(version string) {
 		res.Version = version
 	}
 	res.Headers = make(Headers)
+	res.Locals = make(map[string]any)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
 	res.writer = nil

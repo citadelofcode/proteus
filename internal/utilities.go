@@ -111,12 +111,6 @@ func IsHttpDate(value string) (bool, time.Time) {
 	}
 }
 
-// Calculate the number of milliseconds elapsed since given time.
-func TimeSince(start time.Time) int64 {
-	durationSince := time.Since(start)
-	return durationSince.Milliseconds()
-}
-
 // Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.
 // Replaces all instances of "//" with "/". This function is used for cleaning URL route paths.
 // If the given route path is an empty string, it is returned as-is.

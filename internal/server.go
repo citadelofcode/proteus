@@ -144,7 +144,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			return 0, err
 		}
 
-		startTime := time.Now()
+		httpRequest.Locals["Started"] = time.Now()
 		httpResponse := srv.NewResponse(ClientConnection, httpRequest)
 		var timeout int
 		var max int
@@ -172,7 +172,6 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			if len(srv.middlewares) > 0 {
 				responseSent := srv.processMiddlewares(httpRequest, httpResponse, srv.middlewares)
 				if responseSent {
-					httpRequest.ProcessingTime = TimeSince(startTime)
 					srv.logStatus(httpRequest, httpResponse)
 					return timeout, nil
 				}
@@ -189,7 +188,6 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				if len(matchedRoute.middlewares) > 0 {
 					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.middlewares)
 					if responseSent {
-						httpRequest.ProcessingTime = TimeSince(startTime)
 						srv.logStatus(httpRequest, httpResponse)
 						return timeout, nil
 					}
@@ -200,7 +198,6 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 		}
 
-		httpRequest.ProcessingTime = TimeSince(startTime)
 		srv.logStatus(httpRequest, httpResponse)
 		return timeout, nil
 	}
@@ -274,24 +271,25 @@ func (srv *HttpServer) terminate() {
 //
 // "dev" << :method :url :status :response-time ms - :res[content-length] >>
 func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
+	reqProcessingTime := request.ProcessingTime()
 	if strings.EqualFold(srv.logFormat, DEV_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, request.ProcessingTime, responseContentLength)
+		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, reqProcessingTime, responseContentLength)
 	} else if strings.EqualFold(srv.logFormat, TINY_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, request.ProcessingTime)
+		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, reqProcessingTime)
 	} else if strings.EqualFold(srv.logFormat, SHORT_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, request.ProcessingTime)
+		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, reqProcessingTime)
 	} else {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
