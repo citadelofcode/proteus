@@ -42,27 +42,17 @@ type HttpRequest struct {
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields.
-func (req *HttpRequest) Initialize() {
+func (req *HttpRequest) Initialize(reader io.Reader) {
 	req.BodyBytes = make([]byte, 0)
 	req.Headers = make(Headers)
 	req.Version = "0.9"
 	req.Locals = make(map[string]any)
 	req.Query = make(Params)
 	req.Segments = make(Params)
-	req.reader = nil
+	req.reader = bufio.NewReader(reader)
 	req.Server = nil
 	req.Locals["Started"] = time.Time{}
 	req.Locals["ContentLength"] = 0
-}
-
-// Assigns the stream reader field of HttpRequest with a valid request stream.
-func (req *HttpRequest) SetReader(reader *bufio.Reader) {
-	req.reader = reader
-}
-
-// Sets the server field to the given server instance reference.
-func (req *HttpRequest) SetServer(serverRef *HttpServer) {
-	req.Server = serverRef
 }
 
 // Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.

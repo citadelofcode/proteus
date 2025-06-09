@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -90,7 +89,7 @@ func (srv *HttpServer) isClosed() bool {
 
 // Processes the given set of middlewares for the request and response and returns a boolean value to confirm if the request processing has completed with a response sent back to the client.
 func (srv *HttpServer) processMiddlewares(request *HttpRequest, response *HttpResponse, middlewareList []Middleware) bool {
-	mwsInstance := CreateMiddlewares(middlewareList)
+	mwsInstance := CreateMiddlewares(middlewareList...)
 	for _, middleware := range mwsInstance.Stack {
 		if !mwsInstance.ProcessNext {
 			return true
@@ -302,21 +301,17 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 // Creates and returns pointer to a new instance of HTTP request.
 func (srv *HttpServer) NewRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
-	httpRequest.Initialize()
-	reader := bufio.NewReader(Connection)
-	httpRequest.SetReader(reader)
+	httpRequest.Initialize(Connection)
 	httpRequest.ClientAddress = Connection.RemoteAddr().String()
-	httpRequest.SetServer(srv)
+	httpRequest.Server = srv
 	return &httpRequest
 }
 
 // Creates and returns pointer to a new instance of HTTP response.
 func (srv *HttpServer) NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.Initialize(GetResponseVersion(request.Version))
-	writer := bufio.NewWriter(Connection)
-	httpResponse.SetWriter(writer)
-	httpResponse.SetServer(srv)
+	httpResponse.Initialize(GetResponseVersion(request.Version), Connection)
+	httpResponse.Server = srv
 	return &httpResponse
 }
 

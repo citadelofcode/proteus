@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io"
 )
 
 // Structure to represent a HTTP response sent back by the server to the client.
@@ -31,7 +32,7 @@ type HttpResponse struct {
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
-func (res *HttpResponse) Initialize(version string) {
+func (res *HttpResponse) Initialize(version string, writer io.Writer) {
 	version = strings.TrimSpace(version)
 	if version == "" {
 		res.Version = "0.9"
@@ -42,13 +43,8 @@ func (res *HttpResponse) Initialize(version string) {
 	res.Locals = make(map[string]any)
 	res.addGeneralHeaders()
 	res.addResponseHeaders()
-	res.writer = nil
+	res.writer = bufio.NewWriter(writer)
 	res.Server = nil
-}
-
-// // Assigns the stream writer field of HttpResponse with a valid response stream.
-func (res *HttpResponse) SetWriter(writer *bufio.Writer) {
-	res.writer = writer
 }
 
 // Sets the server field to the given server instance reference.

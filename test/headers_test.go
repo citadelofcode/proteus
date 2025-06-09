@@ -44,7 +44,7 @@ func Test_Headers_Get(t *testing.T) {
 		HdrKey string
 		ExpHdrValue string
 	} {
-		{ "Fetching parameterwith a single value in the collection", "Name", "proteus" },
+		{ "Fetching parameter with a single value in the collection", "Name", "proteus" },
 		{ "Fetching parameter not in the collection", "Age", "" },
 		{ "Fetching parameter with multiple values in the collection", "Server", "WebServer,HTTP-Compliant" },
 	}

@@ -112,8 +112,8 @@ func init() {
 
 	Versions = map[string][]string {
 		"0.9":  { "GET" },
-		"1.0":  { "GET", "POST", "HEAD" },
-		"1.1":  { "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT" },
+		"1.0":  { "GET", "POST", "HEAD", "OPTIONS", "TRACE" },
+		"1.1":  { "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT", "PATCH" },
 	}
 
 	ResponseStatusCodes = []HttpStatus {
