@@ -13,52 +13,21 @@ import (
 const (
 	// Size in bytes for each chunk of data being read from a file.
 	CHUNK_SIZE = 1024
-	// Type value for paths pointing to a folder in the file system.
-	FOLDER_TYPE_PATH = "Folder"
-	// Type value for paths pointing to a file in the file system.
-	FILE_TYPE_PATH = "File"
 )
 
 // Structure to represent a file in the local file system.
 type File struct {
-	// Contents of the file as a stream of bytes.
-	Contents []byte
-	// Media type of the file.
-	ContentType string
-	// Time at which the file was last modified.
-	LastModifiedAt time.Time
 	// Base name of the file.
 	Name string
-	// Size of the file in bytes.
-	Size int64
-}
-
-// Returns the type of the given path i.e., file or folder. An error is returned if the given path is neither a file nor a folder.
-func GetPathType(TargetPath string) (string, error) {
-	TargetPath = CleanPath(TargetPath)
-	fileStat, err := os.Stat(TargetPath)
-	if err != nil {
-		fsfErr := new(FileSystemError)
-		fsfErr.TargetPath = TargetPath
-		fsfErr.Message = fmt.Sprintf("GetPathType: Error occurred while fetching file stats: %s", err.Error())
-		return "", fsfErr
-	}
-	fileMode := fileStat.Mode()
-	if fileMode.IsDir() {
-		return FOLDER_TYPE_PATH, nil
-	} else if fileMode.IsRegular() {
-		return FILE_TYPE_PATH, nil
-	} else {
-		nfErr := new(FileSystemError)
-		nfErr.TargetPath = TargetPath
-		nfErr.Message = "Given path points neither to a file nor to a folder"
-		return "", nfErr
-	}
+	// Complete Path of the file in the local file system.
+	Path string
+	// Stats interface associated with the given file. If the value is nil, it implies the path points to a file that does not exist.
+	stats os.FileInfo
 }
 
 // Reads the contents of the file available at the given path and returns it as a byte slice.
-func ReadFileContents(CompleteFilePath string) ([]byte, error) {
-	CompleteFilePath = CleanPath(CompleteFilePath)
+func (file *File) Contents() ([]byte, error) {
+	CompleteFilePath := file.Path
 	fileContents := make([]byte, 0)
 	fileHandler, err := os.Open(CompleteFilePath)
 	if err != nil {
@@ -89,30 +58,81 @@ func ReadFileContents(CompleteFilePath string) ([]byte, error) {
 	return fileContents, nil
 }
 
+// Gets the file extension of the given file path without the period (".") preceding it and in lowercase.
+func (file *File) Extension() string {
+	CompleteFilePath := file.Path
+	fileExtension := filepath.Ext(CompleteFilePath)
+	fileExtension = strings.TrimPrefix(fileExtension, ".")
+	fileExtension = strings.TrimSpace(fileExtension)
+	fileExtension = strings.ToLower(fileExtension)
+	return fileExtension
+}
+
+// Returns the media type for the given file path.
+func (file *File) MediaType() string {
+	fileExtension := file.Extension()
+	contentType, exists := AllowedContentTypes[fileExtension]
+	if exists {
+		return contentType
+	} else {
+		defaultContentType := GetServerDefaults("content_type").(string)
+		return strings.TrimSpace(defaultContentType)
+	}
+}
+
+// Returns the total size of the file in bytes. If the file does not existsd, it returns zero.
+func (file *File) Size() int64 {
+	if file.stats == nil {
+		return 0
+	} else {
+		return file.stats.Size()
+	}
+}
+
+// Returns the last modified time for the file. If the target file does not exist, it returns the zero value for the "time.Time" type.
+func (file *File) LastModified() time.Time {
+	if file.stats == nil {
+		return time.Time{}
+	} else {
+		return file.stats.ModTime()
+	}
+}
+
+// Structure to connect to the local file system and access files/folders.
+type FileSystem struct {}
+
+// Cleans the path by replacing multiple seperators with a single seperator.
+// It also removes any trailing seperators in the given path.
+func (fs *FileSystem) CleanPath(Path string) string {
+	Path = strings.TrimSpace(Path)
+	Path = filepath.Clean(Path)
+	return Path
+}
+
 // Returns pointer to a FILE object that contains metadata for file available at the given path.
 // The metadata include file contents, last modified time, base name and size in bytes. If the given path does not point to a file, then an error is returned.
-func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*File, error) {
-	var file File
-	pathType, err := GetPathType(CompleteFilePath)
+func (fs *FileSystem) GetFile(CompleteFilePath string) (*File, error) {
+	CompleteFilePath = fs.CleanPath(CompleteFilePath)
+	fileStat, err := os.Stat(CompleteFilePath)
 	if err != nil {
-		return nil, err
-	}
-	if pathType == FILE_TYPE_PATH {
-		file.ContentType = strings.TrimSpace(ContentType)
-		if !OnlyMetadata {
-			fileContents, err := ReadFileContents(CompleteFilePath)
-			if err != nil {
-				return nil, err
-			}
-
-			file.Contents = fileContents
+		if os.IsNotExist(err) {
+			fsfErr := new(FileSystemError)
+			fsfErr.TargetPath = CompleteFilePath
+			fsfErr.Message = "GetFile :: File or Directory referenced by the given path does not exist in the file system"
+			return nil, fsfErr
 		}
-
-		fileStats, _ := os.Stat(CompleteFilePath)
-		file.LastModifiedAt = fileStats.ModTime()
-		file.Name = fileStats.Name()
-		file.Size = fileStats.Size()
-		return &file, nil
+		fsfErr := new(FileSystemError)
+		fsfErr.TargetPath = CompleteFilePath
+		fsfErr.Message = fmt.Sprintf("GetFile: Error occurred while fetching file stats: %s", err.Error())
+		return nil, fsfErr
+	}
+	fileMode := fileStat.Mode()
+	if fileMode.IsRegular() {
+		file := new(File)
+		file.Path = CompleteFilePath
+		file.Name = filepath.Base(file.Path)
+		file.stats = fileStat
+		return file, nil
 	} else {
 		fsfErr := new(FileSystemError)
 		fsfErr.TargetPath = CompleteFilePath
@@ -121,47 +141,24 @@ func GetFile(CompleteFilePath string, ContentType string, OnlyMetadata bool) (*F
 	}
 }
 
-// Cleans the path by replacing multiple seperators with a single seperator.
-// It also removes any trailing seperators in the given path.
-func CleanPath(Path string) string {
-	Path = strings.TrimSpace(Path)
-	Path = filepath.Clean(Path)
-	return Path
-}
-
 // Returns a boolean value indicating if the given path is an absolute path.
-func IsAbsolute(FilePath string) bool {
-	return filepath.IsAbs(CleanPath(FilePath))
+func (fs *FileSystem) IsAbsolute(CompleteFilePath string) bool {
+	CompleteFilePath = fs.CleanPath(CompleteFilePath)
+	return filepath.IsAbs(CompleteFilePath)
 }
 
-// Gets the file extension of the given file path without the period (".") preceding it.
-func GetFileExtension(CompleteFilePath string) string {
-	CompleteFilePath = CleanPath(CompleteFilePath)
-	fileExtension := filepath.Ext(CompleteFilePath)
-	fileExtension = strings.TrimPrefix(fileExtension, ".")
-	return fileExtension
-}
-
-// Returns the file media type for the given file path.
-func GetContentType(CompleteFilePath string) (string, error) {
-	pathType, err := GetPathType(CompleteFilePath)
+// Returns a boolean value indicating if the given path points to a directory in the file system.
+// Itn returns a false if the path points to a folder that does not exist or if the program dooes not have access to the file system.
+func (fs *FileSystem) IsDirectory(CompletePath string) bool {
+	CompletePath = fs.CleanPath(CompletePath)
+	stats, err := os.Stat(CompletePath)
 	if err != nil {
-		return "", err
+		return false
 	}
-
-	if pathType == FILE_TYPE_PATH {
-		fileExtension := strings.ToLower(GetFileExtension(CompleteFilePath))
-		contentType, exists := AllowedContentTypes[fileExtension]
-		if exists {
-			return contentType, nil
-		} else {
-			defaultContentType := GetServerDefaults("content_type").(string)
-			return strings.TrimSpace(defaultContentType), nil
-		}
+	mode := stats.Mode()
+	if mode.IsDir() {
+		return true
+	} else {
+		return false
 	}
-
-	nfErr := new(FileSystemError)
-	nfErr.TargetPath = CompleteFilePath
-	nfErr.Message = "Given path does not point to a file"
-	return "", nfErr
 }

@@ -6,13 +6,19 @@
 
 ## Testing
 
-To run all the test scripts available in the module, execute the following commands.
+To run all the test scripts available in the module, execute the below `Makefile` command.
 
 ```bash
 make test
 ```
 
-For this to work, make sure you have `make` already installed in your system.
+To run a specific test script file, run the following command.
+
+```bash
+make testfile FILE=./test/body_parser_test.go
+```
+
+Replace `./test/body_parser_test.go` with the path of the test script file you want to execute.
 
 ## Example Usage
 

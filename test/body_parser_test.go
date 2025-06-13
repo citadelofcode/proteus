@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
 	"github.com/citadelofcode/proteus/internal"
 )
 

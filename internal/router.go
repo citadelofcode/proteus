@@ -21,27 +21,25 @@ type Router struct {
 	routeTree *PrefixTree
 	// Collection of static paths configured for the router.
 	staticRoutes map[string]string
+	// To access the underlying filesystem and its files/folders.
+	fs *FileSystem
 }
 
 // Adds a new static route and target folder to the static routes collection.
 func (rtr *Router) Static(RoutePath string, TargetPath string) error {
 	RoutePath = CleanRoute(RoutePath)
-	TargetPath = CleanPath(TargetPath)
-	isAbsolutePath := IsAbsolute(TargetPath)
-	if !isAbsolutePath {
+	isAbsolute := rtr.fs.IsAbsolute(TargetPath)
+	if !isAbsolute {
 		reError := new(RoutingError)
 		reError.RoutePath = TargetPath
 		reError.Message = "Target path must be absolute"
 		return reError
 	}
-	PathType, err := GetPathType(TargetPath)
-	if err != nil {
-		return err
-	}
-	if PathType == FILE_TYPE_PATH {
+	isDirectory := rtr.fs.IsDirectory(TargetPath)
+	if !isDirectory {
 		reError := new(RoutingError)
 		reError.RoutePath = TargetPath
-		reError.Message = "Target path given should point to a directory not a file"
+		reError.Message = "Target path given should point to a directory in the local file system"
 		return reError
 	}
 
@@ -116,8 +114,7 @@ func (rtr *Router) addRoute(Method string, RoutePath string, handlerFunc RouteHa
 
 // Function that matches a given route with the route tree and fetches the matched route, uses this route to get the corresponding handler.
 func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
-	routePath := request.ResourcePath
-	routePath = CleanRoute(routePath)
+	routePath := CleanRoute(request.ResourcePath)
 	if strings.EqualFold(request.Method, "GET") || strings.EqualFold(request.Method, "HEAD") {
 		for routeKey, TargetPath := range rtr.staticRoutes {
 			if strings.HasPrefix(routePath, routeKey) {
@@ -164,5 +161,6 @@ func NewRouter() *Router {
 	router := new(Router)
 	router.routeTree = EmptyPrefixTree()
 	router.staticRoutes = make(map[string]string)
+	router.fs = new(FileSystem)
 	return router
 }

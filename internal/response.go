@@ -29,6 +29,8 @@ type HttpResponse struct {
 	Server *HttpServer
 	// key-value pairs to hold variables available during the entire response lifecycle.
 	Locals map[string]any
+	// FileSystem instance to access the local file system.
+	fs *FileSystem
 }
 
 // // Initializes the instance of HttpResponse with default values for all its fields.
@@ -45,6 +47,7 @@ func (res *HttpResponse) Initialize(version string, writer io.Writer) {
 	res.addResponseHeaders()
 	res.writer = bufio.NewWriter(writer)
 	res.Server = nil
+	res.fs = new(FileSystem)
 }
 
 // Sets the server field to the given server instance reference.
@@ -229,24 +232,24 @@ func (res *HttpResponse) Status(status StatusCode) {
 
 // Send the given file from the local file system as the HTTP response.
 func (res *HttpResponse) SendFile(CompleteFilePath string, OnlyMetadata bool) error {
-	fileMediaType, ok := res.Headers.Get("Content-Type")
-	if !ok {
-		fileMediaType, err := GetContentType(CompleteFilePath)
-		if err != nil {
-			return err
-		}
-		res.Headers.Add("Content-Type", fileMediaType)
-	}
-
-	file, err := GetFile(CompleteFilePath, fileMediaType, OnlyMetadata)
+	file, err := res.fs.GetFile(CompleteFilePath)
 	if err != nil {
 		return err
 	}
 
-	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size, 10))
-	res.Headers.Add("Last-Modified", file.LastModifiedAt.Format(time.RFC1123))
+	res.Headers.Add("Content-Length", strconv.FormatInt(file.Size(), 10))
+	res.Headers.Add("Last-Modified", file.LastModified().Format(time.RFC1123))
+	_, ok := res.Headers.Get("Content-Type")
+	if !ok {
+		res.Headers.Add("Content-Type", file.MediaType())
+	}
+
 	if !OnlyMetadata {
-		res.BodyBytes = file.Contents
+		contents, err := file.Contents()
+		if err != nil {
+			return err
+		}
+		res.BodyBytes = contents
 	}
 
 	return res.Write()

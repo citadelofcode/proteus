@@ -39,6 +39,8 @@ type HttpRequest struct {
 	Server *HttpServer
 	// The actual content contained by the request. The type of the data is determined at run time depending on the data sent as part of the request.
 	Body any
+	// FileSystem instance to access the local file system.
+	fs *FileSystem
 }
 
 // Initializes the instance of HttpRequest with default values for all its fields.
@@ -53,6 +55,7 @@ func (req *HttpRequest) Initialize(reader io.Reader) {
 	req.Server = nil
 	req.Locals["Started"] = time.Time{}
 	req.Locals["ContentLength"] = 0
+	req.fs = new(FileSystem)
 }
 
 // Reads bytes of data from request byte stream and stores it in individual fields of HttpRequest instance.
@@ -231,32 +234,28 @@ func (req *HttpRequest) IsConditionalGet(CompleteFilePath string) (bool, error) 
 		return false, nil
 	}
 
-	fileMediaType, err := GetContentType(CompleteFilePath)
-	if err != nil {
-		return false, err
-	}
-
-	file, err := GetFile(CompleteFilePath, fileMediaType, true)
-	if err != nil {
-		return false, err
-	}
-
-	LastModifiedString, ok := req.Headers.Get("If-Modified-Since")
+	IfModifiedSinceString, ok := req.Headers.Get("If-Modified-Since")
 	if !ok {
 		return false, nil
 	}
 
-	LastModifiedString = strings.TrimSpace(LastModifiedString)
-	isValid, LastModifiedSince := IsHttpDate(LastModifiedString)
+	IfModifiedSinceString = strings.TrimSpace(IfModifiedSinceString)
+	isValid, IfModifiedSince := IsHttpDate(IfModifiedSinceString)
 	if !isValid {
 		reqError := new(RequestParseError)
 		reqError.Section = "Header"
-		reqError.Value = LastModifiedString
-		reqError.Message = "The given datetime string value must either conform to ANSIC or RFC 1123 format"
+		reqError.Value = IfModifiedSinceString
+		reqError.Message = "The given datetime string value must either conform to ANSIC, RFC 1123 or  RFC 850 format"
 		return false, reqError
 	}
 
-	if file.LastModifiedAt.After(LastModifiedSince) {
+	file, err := req.fs.GetFile(CompleteFilePath)
+	if err != nil {
+		return false, err
+	}
+
+	LastModifiedAt := file.LastModified()
+	if LastModifiedAt.After(IfModifiedSince) {
 		return false, nil
 	}
 

@@ -53,6 +53,7 @@ func init() {
         "htm": "text/html",
         "html": "text/html",
         "css": "text/css",
+		"txt": "text/plain",
         "js": "text/javascript",
         "mjs": "text/javascript",
         "cjs": "text/javascript",
