@@ -40,7 +40,7 @@ var DateHeaders []string
 var AllowedContentTypes map[string]string
 // A map containing all the default server configuration values.
 var ServerDefaults map[string]any
-// List of all versions of HTTP supported by the web server.
+// List of all versions of HTTP supported by the web server and the HTTP methods supported for each version.
 var Versions map[string][]string
 // List of response status codes and their associated information.
 var ResponseStatusCodes []HttpStatus
