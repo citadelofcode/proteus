@@ -18,7 +18,7 @@ func GetServerDefaults(key string) any {
 	return value
 }
 
-// Gets the highest version of HTTP supported by the web server that is less than the given request version.
+// Gets the highest version of HTTP supported by the web server that is compatible with the given request version.
 func GetHighestVersion(requestVersion string) string {
 	var maxVersion float64 = 0.0
 	requestVersion = strings.TrimSpace(requestVersion)
@@ -26,7 +26,7 @@ func GetHighestVersion(requestVersion string) string {
 	for versionNo := range Versions {
 		currentVersion, err := strconv.ParseFloat(versionNo, 64)
 		if err == nil {
-			if currentVersion > maxVersion && currentVersion < reqVer {
+			if currentVersion > maxVersion && currentVersion <= reqVer {
 				maxVersion = currentVersion
 			}
 		}
@@ -48,10 +48,10 @@ func GetAllVersions() []string {
 
 // Gets the list of allowed HTTP methods supported by the web server for the given HTTP version.
 func GetAllowedMethods(version string) string {
-	for versionNo, AllowedMethods := range Versions {
-		if strings.EqualFold(versionNo, version) {
-			return strings.Join(AllowedMethods, ", ")
-		}
+	version = strings.TrimSpace(version)
+	AllowedMethods, ok := Versions[version]
+	if ok {
+		return strings.Join(AllowedMethods, ", ")
 	}
 
 	return ""
@@ -59,10 +59,15 @@ func GetAllowedMethods(version string) string {
 
 // Checks if the given HTTP method is supported by the web server for the given version.
 func IsMethodAllowed(version string, requestMethod string) bool {
-	for versionNo, AllowedMethods := range Versions {
-		if strings.EqualFold(versionNo, version) && slices.Contains(AllowedMethods, requestMethod) {
-			return true
-		}
+	version = strings.TrimSpace(version)
+	requestMethod = strings.TrimSpace(strings.ToUpper(requestMethod))
+	allowedMethods, ok := Versions[version]
+	if !ok {
+		return false
+	}
+
+	if slices.Contains(allowedMethods, requestMethod) {
+		return true
 	}
 
 	return false
@@ -70,20 +75,7 @@ func IsMethodAllowed(version string, requestMethod string) bool {
 
 // Returns the HTTP response version for the given request version value.
 func GetResponseVersion(requestVersion string) string {
-	isCompatible := false
-
-	for _, version := range GetAllVersions() {
-		if strings.EqualFold(version, requestVersion) {
-			isCompatible = true
-			break
-		}
-	}
-
-	if isCompatible {
-		return requestVersion
-	} else {
-		return GetHighestVersion(requestVersion)
-	}
+	return GetHighestVersion(requestVersion)
 }
 
 // Returns the current UTC time in RFC 1123 format.
@@ -109,12 +101,6 @@ func IsHttpDate(value string) (bool, time.Time) {
 	} else {
 		return false, time.Time{}
 	}
-}
-
-// Calculate the number of milliseconds elapsed since given time.
-func TimeSince(start time.Time) int64 {
-	durationSince := time.Since(start)
-	return durationSince.Milliseconds()
 }
 
 // Removes all but one leading '/' and all the trailing '/' from the given route path and returns the cleaned value.

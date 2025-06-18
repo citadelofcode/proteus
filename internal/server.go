@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -90,7 +89,7 @@ func (srv *HttpServer) isClosed() bool {
 
 // Processes the given set of middlewares for the request and response and returns a boolean value to confirm if the request processing has completed with a response sent back to the client.
 func (srv *HttpServer) processMiddlewares(request *HttpRequest, response *HttpResponse, middlewareList []Middleware) bool {
-	mwsInstance := CreateMiddlewares(middlewareList)
+	mwsInstance := CreateMiddlewares(middlewareList...)
 	for _, middleware := range mwsInstance.Stack {
 		if !mwsInstance.ProcessNext {
 			return true
@@ -144,7 +143,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			return 0, err
 		}
 
-		startTime := time.Now()
+		httpRequest.Locals["Started"] = time.Now()
 		httpResponse := srv.NewResponse(ClientConnection, httpRequest)
 		var timeout int
 		var max int
@@ -172,7 +171,6 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			if len(srv.middlewares) > 0 {
 				responseSent := srv.processMiddlewares(httpRequest, httpResponse, srv.middlewares)
 				if responseSent {
-					httpRequest.ProcessingTime = TimeSince(startTime)
 					srv.logStatus(httpRequest, httpResponse)
 					return timeout, nil
 				}
@@ -186,10 +184,9 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				ErrorHandler(httpRequest, httpResponse)
 			} else {
 				// After match is fetched, process the route level middlewares.
-				if len(matchedRoute.middlewares) > 0 {
-					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.middlewares)
+				if len(matchedRoute.Middlewares) > 0 {
+					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.Middlewares)
 					if responseSent {
-						httpRequest.ProcessingTime = TimeSince(startTime)
 						srv.logStatus(httpRequest, httpResponse)
 						return timeout, nil
 					}
@@ -200,7 +197,6 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			}
 		}
 
-		httpRequest.ProcessingTime = TimeSince(startTime)
 		srv.logStatus(httpRequest, httpResponse)
 		return timeout, nil
 	}
@@ -274,24 +270,25 @@ func (srv *HttpServer) terminate() {
 //
 // "dev" << :method :url :status :response-time ms - :res[content-length] >>
 func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
+	reqProcessingTime := request.ProcessingTime()
 	if strings.EqualFold(srv.logFormat, DEV_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, request.ProcessingTime, responseContentLength)
+		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, reqProcessingTime, responseContentLength)
 	} else if strings.EqualFold(srv.logFormat, TINY_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, request.ProcessingTime)
+		srv.requestLogger.Printf("%s %s %d %s - %d ms", request.Method, request.ResourcePath, response.StatusCode, responseContentLength, reqProcessingTime)
 	} else if strings.EqualFold(srv.logFormat, SHORT_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, request.ProcessingTime)
+		srv.requestLogger.Printf("%s %s %s HTTP/%s %d %s - %d ms", request.ClientAddress, request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength, reqProcessingTime)
 	} else {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
@@ -304,21 +301,17 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 // Creates and returns pointer to a new instance of HTTP request.
 func (srv *HttpServer) NewRequest(Connection net.Conn) *HttpRequest {
 	var httpRequest HttpRequest
-	httpRequest.Initialize()
-	reader := bufio.NewReader(Connection)
-	httpRequest.SetReader(reader)
+	httpRequest.Initialize(Connection)
 	httpRequest.ClientAddress = Connection.RemoteAddr().String()
-	httpRequest.SetServer(srv)
+	httpRequest.Server = srv
 	return &httpRequest
 }
 
 // Creates and returns pointer to a new instance of HTTP response.
 func (srv *HttpServer) NewResponse(Connection net.Conn, request *HttpRequest) *HttpResponse {
 	var httpResponse HttpResponse
-	httpResponse.Initialize(GetResponseVersion(request.Version))
-	writer := bufio.NewWriter(Connection)
-	httpResponse.SetWriter(writer)
-	httpResponse.SetServer(srv)
+	httpResponse.Initialize(GetResponseVersion(request.Version), Connection)
+	httpResponse.Server = srv
 	return &httpResponse
 }
 

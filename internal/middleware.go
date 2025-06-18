@@ -24,7 +24,7 @@ func (mds *Middlewares) Stop() {
 }
 
 // Create a new instance of "Middlewares" and return a reference to the instance.
-func CreateMiddlewares(middlewareList []Middleware) *Middlewares {
+func CreateMiddlewares(middlewareList ...Middleware) *Middlewares {
 	middlewares := new(Middlewares)
 	middlewares.ProcessNext = true
 	middlewares.Stack = make([]Middleware, 0)

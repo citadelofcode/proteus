@@ -3,11 +3,12 @@ package test
 import (
 	"strings"
 	"testing"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the working of adding new header to the Headers collection.
 func Test_Headers_Add(t *testing.T) {
-	testHeaders := make(Headers)
+	testHeaders := make(internal.Headers)
 	testCases := []struct {
 		Name string
 		HdrKey string
@@ -34,7 +35,7 @@ func Test_Headers_Add(t *testing.T) {
 
 // Test case to validate the working of fetching the values for a 'key' from the Headers collection.
 func Test_Headers_Get(t *testing.T) {
-	testHeaders := make(Headers)
+	testHeaders := make(internal.Headers)
 	testHeaders.Add("Name", "proteus")
 	testHeaders.Add("Server", "WebServer")
 	testHeaders.Add("Server", "HTTP-Compliant")
@@ -43,7 +44,7 @@ func Test_Headers_Get(t *testing.T) {
 		HdrKey string
 		ExpHdrValue string
 	} {
-		{ "Fetching parameterwith a single value in the collection", "Name", "proteus" },
+		{ "Fetching parameter with a single value in the collection", "Name", "proteus" },
 		{ "Fetching parameter not in the collection", "Age", "" },
 		{ "Fetching parameter with multiple values in the collection", "Server", "WebServer,HTTP-Compliant" },
 	}

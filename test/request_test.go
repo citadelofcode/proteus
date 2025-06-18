@@ -1,23 +1,14 @@
 package test
 
 import (
-	"bufio"
 	"io"
 	"strings"
 	"testing"
 )
 
-// Helper function to create and return a new test instance of HttpRequest.
-func newTestRequest(t testing.TB) *HttpRequest {
-	t.Helper()
-	testReq := new(HttpRequest)
-	testReq.Initialize()
-	testReq.SetServer(NewServer("", 0))
-	return testReq
-}
-
 // Test case to validate the HTTP request message read and parse functionality.
 func Test_Request_Read(t *testing.T) {
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		InputRequest string
@@ -34,9 +25,7 @@ func Test_Request_Read(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testReq := newTestRequest(tt)
-			stringReader := strings.NewReader(testCase.InputRequest)
-			testReq.SetReader(bufio.NewReader(stringReader))
+			testReq := NewTestRequest(tt, testServer, strings.NewReader(testCase.InputRequest))
 			err := testReq.Read()
 			if err != nil && err != io.EOF {
 				tt.Errorf("The given request could not be parsed. Error :: %s", err.Error())
@@ -76,28 +65,39 @@ func Test_Request_Read(t *testing.T) {
 	}
 }
 
-// Test case to validate the addition of headers to a HTTP request message.
+// Test case to validate the addHeader functionality of the HTTP Request instance.
 func Test_Request_AddHeader(t *testing.T) {
-	testRequest := newTestRequest(t)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
-		InputHeaderKey string
-		InputHeaderValue string
-		ExpHdrCount int
+		InputHeader string
+		InputValue string
+		HeaderExists bool
 	} {
-		{ "A non-date header field", "Content-Type", "application/pdf", 1 },
-		{ "A date header field with value in ANSIC format", "Date", "Sun Nov  6 08:49:37 1994", 2 },
-		{ "A date header field with value in RFC 1123 format", "Last-Modified", "Mon, 30 Jun 2008 11:05:30 GMT", 3 },
-		{ "A date header field with invalid date value", "If-Modified-Since", "2024-12-11T12:34:56Z" ,3 },
+		{ "Valid non-date Header field and value", "Content-Type", "application/json", true },
+		{ "Valid RFC1123 value for a date header", "Date", "Mon, 06 Jun 2025 18:45:00 GMT", true },
+		{ "Valid ANSIC value for a date header", "Expires", "Fri Jun  6 18:45:00 2025", true },
+		{ "Valid RFC850 value for a date header", "If-Modified-Since", "Friday, 06-Jun-25 18:45:00 GMT", true },
+		{ "Date header with value of invalid format", "Last-Modified", "2025-06-06T18:45:00Z", false },
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testRequest.AddHeader(testCase.InputHeaderKey, testCase.InputHeaderValue)
-			if testRequest.Headers.Length() != testCase.ExpHdrCount {
-				tt.Errorf("The request header count - %d does not match the expected header count - %d", testRequest.Headers.Length(), testCase.ExpHdrCount)
+			testRequest := NewTestRequest(t, testServer, nil)
+			testRequest.AddHeader(testCase.InputHeader, testCase.InputValue)
+			_, headerExists := testRequest.Headers.Get(testCase.InputHeader)
+			if headerExists == testCase.HeaderExists {
+				if headerExists {
+					tt.Logf("Input Header [%s] has been added successfully to the request as expected", testCase.InputHeader)
+				} else {
+					tt.Logf("Invalid Input Header [%s] was not added to the request headers collection as expected", testCase.InputHeader)
+				}
 			} else {
-				tt.Logf("The request header count - %d matches the expected header count - %d", testRequest.Headers.Length(), testCase.ExpHdrCount)
+				if headerExists {
+					tt.Errorf("An invalid header [%s] with value [%s] has been added to the request headers collection", testCase.InputHeader, testCase.InputValue)
+				} else {
+					tt.Errorf("A valid header [%s] with value [%s] has not been aded to the request headers collection", testCase.InputHeader, testCase.InputValue)
+				}
 			}
 		})
 	}
