@@ -4,21 +4,11 @@ import (
 	"io"
 	"strings"
 	"testing"
-	"github.com/citadelofcode/proteus/internal"
 )
-
-// Helper function to create and return a new test instance of HttpRequest.
-func newTestRequest(tt testing.TB, server *internal.HttpServer, reader io.Reader) *internal.HttpRequest {
-	tt.Helper()
-	testReq := new(internal.HttpRequest)
-	testReq.Initialize(reader)
-	testReq.Server = server
-	return testReq
-}
 
 // Test case to validate the HTTP request message read and parse functionality.
 func Test_Request_Read(t *testing.T) {
-	testServer := internal.NewServer("", 0)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		InputRequest string
@@ -35,7 +25,7 @@ func Test_Request_Read(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testReq := newTestRequest(tt, testServer, strings.NewReader(testCase.InputRequest))
+			testReq := NewTestRequest(tt, testServer, strings.NewReader(testCase.InputRequest))
 			err := testReq.Read()
 			if err != nil && err != io.EOF {
 				tt.Errorf("The given request could not be parsed. Error :: %s", err.Error())
@@ -77,7 +67,7 @@ func Test_Request_Read(t *testing.T) {
 
 // Test case to validate the addHeader functionality of the HTTP Request instance.
 func Test_Request_AddHeader(t *testing.T) {
-	testServer := internal.NewServer("", 0)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		InputHeader string
@@ -93,7 +83,7 @@ func Test_Request_AddHeader(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testRequest := newTestRequest(t, testServer, nil)
+			testRequest := NewTestRequest(t, testServer, nil)
 			testRequest.AddHeader(testCase.InputHeader, testCase.InputValue)
 			_, headerExists := testRequest.Headers.Get(testCase.InputHeader)
 			if headerExists == testCase.HeaderExists {

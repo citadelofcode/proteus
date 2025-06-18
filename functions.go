@@ -11,6 +11,3 @@ var CreateServer = internal.NewServer
 // Creates a new router to declare endpoints and associated handlers.
 // The created router instance must be mapped to a server instance for the route paths to be functional.
 var CreateRouter = internal.NewRouter
-
-// Cleans the given URL route path and returns the cleaned route.
-var CleanRoute = internal.CleanRoute

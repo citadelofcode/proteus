@@ -1,20 +1,18 @@
 package test
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
 	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the working of the IsAbsolute() function of FileSystem.
 func Test_FileSystem_IsAbsolute(t *testing.T) {
-	tempRoot := t.TempDir()
-	AbsFolderExists := filepath.Join(tempRoot, "abs-exists")
-	AbsFolderNoExists := filepath.Join(tempRoot, "abs-noexists")
-	err := os.Mkdir(AbsFolderExists, 0755)
+	root := t.TempDir()
+	AbsFolderExists := filepath.Join(root, "abs-exists")
+	AbsFolderNoExists := filepath.Join(root, "abs-noexists")
+	err := CreateDirectories(t, root, []string{ "abs-exists" })
 	if err != nil {
 		t.Fatalf("Error occurred while creating test folders: %s", err.Error())
 		return
@@ -45,21 +43,25 @@ func Test_FileSystem_IsAbsolute(t *testing.T) {
 
 // Test case to validate the working of the IsDirectory() method of FileSystem.
 func Test_FileSystem_IsDirectory(t *testing.T) {
-	tempRoot := t.TempDir()
-	ExistsFolder := filepath.Join(tempRoot, "folderone")
-	NotExistsFolder := filepath.Join(tempRoot, "foldertwo")
-	err := os.Mkdir(ExistsFolder, 0755)
+	root := t.TempDir()
+	ExistsFolder := filepath.Join(root, "folderone")
+	NotExistsFolder := filepath.Join(root, "foldertwo")
+	err := CreateDirectories(t, root, []string{ "folderone" })
 	if err != nil {
 		t.Fatalf("Error occurred while creating test folders: %s", err.Error())
 		return
 	}
-	ExistsTextFile := filepath.Join(tempRoot, "exists.txt")
-	err = os.WriteFile(ExistsTextFile, []byte("Hello, this is a sample text file"), 0644)
+
+	ExistsTextFile := filepath.Join(root, "exists.txt")
+	err = CreateFiles(t, root, map[string][]byte{
+		"exists.txt": []byte("Hello, this is a sample text file"),
+	})
 	if err != nil {
 		t.Fatalf("Error occurred while creating test file: %s", err.Error())
 		return
 	}
-	NotExistsTextFile := filepath.Join(tempRoot, "not-exists.txt")
+
+	NotExistsTextFile := filepath.Join(root, "not-exists.txt")
 	fs := new(internal.FileSystem)
 	testCases := []struct {
 		Name string
@@ -86,16 +88,18 @@ func Test_FileSystem_IsDirectory(t *testing.T) {
 
 // Test case to validate the working of GetFile() method of FileSystem.
 func Test_FileSystem_GetFile(t *testing.T) {
-	tempRoot := t.TempDir()
-	Folder := filepath.Join(tempRoot, "folder-tc")
-	ExistsFile := filepath.Join(tempRoot, "exists.txt")
-	NotExistsFile := filepath.Join(tempRoot, "not-exists.txt")
-	err := os.Mkdir(Folder, 0755)
+	root := t.TempDir()
+	Folder := filepath.Join(root, "folder-tc")
+	ExistsFile := filepath.Join(root, "exists.txt")
+	NotExistsFile := filepath.Join(root, "not-exists.txt")
+	err := CreateDirectories(t, root, []string{ "folder-tc" })
 	if err != nil {
-		t.Fatalf("Error occurred while creating test folders: %s", err.Error())
+		t.Fatalf("Error occurred while creating test folder: %s", err.Error())
 		return
 	}
-	err = os.WriteFile(ExistsFile, []byte("This is a sample text"), 0644)
+	err = CreateFiles(t, root, map[string][]byte{
+		"exists.txt": []byte("This is a sample text!"),
+	})
 	if err != nil {
 		t.Fatalf("Error occurred while creating test file: %s", err.Error())
 		return
@@ -109,7 +113,7 @@ func Test_FileSystem_GetFile(t *testing.T) {
 		ExpMediaType string
 		ExpError string
 	} {
-		{ "A valid text file available in the file system", ExistsFile, 21, "txt", "text/plain", "" },
+		{ "A valid text file available in the file system", ExistsFile, 22, "txt", "text/plain", "" },
 		{ "A valid text file not available in the file system", NotExistsFile , 0, "txt", "text/plain", "FileSystemError" },
 		{ "A path pointing to a folder in the file system", Folder, 0, "", "text/plain", "FileSystemError" },
 	}
@@ -154,14 +158,16 @@ func Test_FileSystem_GetFile(t *testing.T) {
 
 // Test case to validate the working of method that fetches the contents of a given file from the underlying file system.
 func Test_FileSystem_FetchContents(t *testing.T) {
-	tempRoot := t.TempDir()
-	FileToBeRead := filepath.Join(tempRoot, "file-to-be-read.txt")
+	root := t.TempDir()
 	FileContentsToBeWritten := "This is a sample text\nThis is another line\nAnd another line"
-	err := os.WriteFile(FileToBeRead, []byte(FileContentsToBeWritten), 0644)
+	err := CreateFiles(t, root, map[string][]byte{
+		"file-to-be-read.txt": []byte(FileContentsToBeWritten),
+	})
 	if err != nil {
 		t.Fatalf("Error occurred while creating test file: %s", err.Error())
 		return
 	}
+	FileToBeRead := filepath.Join(root, "file-to-be-read.txt")
 	fs := new(internal.FileSystem)
 	file, err := fs.GetFile(FileToBeRead)
 	if err != nil {
@@ -179,5 +185,44 @@ func Test_FileSystem_FetchContents(t *testing.T) {
 		t.Logf("The contents of file [%s] read from the file system matches the expected content", FileToBeRead)
 	} else {
 		t.Errorf("The contents of file [%s] read from the file system does not match the expected content", FileToBeRead)
+	}
+}
+
+// Test case to validate the Exists() function of FileSystem.
+func Test_FileSystem_Exists(t *testing.T) {
+	root := t.TempDir()
+	err := CreateDirectories(t, root, []string{ "static" })
+	if err != nil {
+		t.Fatalf("Error occurred while creating temporary folders for testing: %s", err.Error())
+		return
+	}
+	err = CreateFiles(t, root, map[string][]byte{
+		"home.html": []byte("<p>Hello, World!</p>"),
+	})
+	if err != nil {
+		t.Fatalf("Error occurred while creating temporary files for testing: %s", err.Error())
+		return
+	}
+	fs := new(internal.FileSystem)
+	testCases := []struct {
+		Name string
+		IpPath string
+		OpValue bool
+	} {
+		{ "A folder that exists in the file system", filepath.Join(root, "static"), true },
+		{ "A folder that does not exist in the file system", filepath.Join(root, "public"), false },
+		{ "A file that exists in the file system", filepath.Join(root, "home.html"), true },
+		{ "A file that does not exist in the file system", filepath.Join(root, "index.html"), false },
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(tt *testing.T) {
+			isExists := fs.Exists(testCase.IpPath)
+			if isExists == testCase.OpValue {
+				tt.Logf("The expected value [%t] matches the returned value [%t].", testCase.OpValue, isExists)
+			} else {
+				tt.Errorf("The expected value [%t] does not match the returned value [%t].", testCase.OpValue, isExists)
+			}
+		})
 	}
 }

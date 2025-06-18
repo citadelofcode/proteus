@@ -184,8 +184,8 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				ErrorHandler(httpRequest, httpResponse)
 			} else {
 				// After match is fetched, process the route level middlewares.
-				if len(matchedRoute.middlewares) > 0 {
-					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.middlewares)
+				if len(matchedRoute.Middlewares) > 0 {
+					responseSent := srv.processMiddlewares(httpRequest, httpResponse, matchedRoute.Middlewares)
 					if responseSent {
 						srv.logStatus(httpRequest, httpResponse)
 						return timeout, nil

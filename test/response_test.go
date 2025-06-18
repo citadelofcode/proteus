@@ -6,22 +6,12 @@ import (
 	"strings"
 	"testing"
 	"bufio"
-	"io"
 	"github.com/citadelofcode/proteus/internal"
 )
 
-// Helper function to create and return a new test instance of HttpResponse.
-func newTestResponse(t testing.TB, version string, server *internal.HttpServer, writer io.Writer) *internal.HttpResponse {
-	t.Helper()
-	testRes := new(internal.HttpResponse)
-	testRes.Initialize(version, writer)
-	testRes.Server = server
-	return testRes
-}
-
 // Test case to validate the working of the response write function.
 func Test_Response_Write(t *testing.T) {
-	testServer := internal.NewServer("", 0)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		IpVersion string
@@ -37,7 +27,7 @@ func Test_Response_Write(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			var opBuffer bytes.Buffer
-			res := newTestResponse(tt, testCase.IpVersion, testServer, bufio.NewWriter(&opBuffer))
+			res := NewTestResponse(tt, testCase.IpVersion, testServer, bufio.NewWriter(&opBuffer))
 			res.BodyBytes = []byte(testCase.IpContent)
 			if !strings.EqualFold(testCase.IpVersion, "0.9") {
 				res.AddHeader("Content-Type", testCase.IpContentType)
@@ -77,7 +67,7 @@ func Test_Response_Write(t *testing.T) {
 
 // Test case to validate the default headers for response instance for different versions of HTTP.
 func Test_Response_DefaultHeaders(t *testing.T) {
-	testServer := internal.NewServer("", 0)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		HttpVersion string
@@ -90,7 +80,7 @@ func Test_Response_DefaultHeaders(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testResponse := newTestResponse(tt, testCase.HttpVersion, testServer, nil)
+			testResponse := NewTestResponse(tt, testCase.HttpVersion, testServer, nil)
 			if testResponse.Headers.Length() == testCase.ExpHeaderCount {
 				tt.Logf("The expected header count [%d] matches the actual header count [%d] for HTTP/[%s] response instance", testCase.ExpHeaderCount, testResponse.Headers.Length(), testCase.HttpVersion)
 			} else {
@@ -102,7 +92,7 @@ func Test_Response_DefaultHeaders(t *testing.T) {
 
 // Test case to validate the addHeader functionality of the HTTP Response instance.
 func Test_Response_AddHeader(t *testing.T) {
-	testServer := internal.NewServer("", 0)
+	testServer := NewTestServer(t)
 	testCases := []struct {
 		Name string
 		InputHeader string
@@ -118,7 +108,7 @@ func Test_Response_AddHeader(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			testResponse := newTestResponse(t, "1.0", testServer, nil)
+			testResponse := NewTestResponse(t, "1.0", testServer, nil)
 			testResponse.AddHeader(testCase.InputHeader, testCase.InputValue)
 			_, headerExists := testResponse.Headers.Get(testCase.InputHeader)
 			if headerExists == testCase.HeaderExists {

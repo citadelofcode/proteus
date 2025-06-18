@@ -148,7 +148,7 @@ func (fs *FileSystem) IsAbsolute(CompleteFilePath string) bool {
 }
 
 // Returns a boolean value indicating if the given path points to a directory in the file system.
-// Itn returns a false if the path points to a folder that does not exist or if the program dooes not have access to the file system.
+// Itn returns a false if the path points to a folder that does not exist or if the program does not have access to the file system.
 func (fs *FileSystem) IsDirectory(CompletePath string) bool {
 	CompletePath = fs.CleanPath(CompletePath)
 	stats, err := os.Stat(CompletePath)
@@ -161,4 +161,11 @@ func (fs *FileSystem) IsDirectory(CompletePath string) bool {
 	} else {
 		return false
 	}
+}
+
+// Returns a boolean value indicating if the file or folder represented by the given path exists in the file system.
+func (fs *FileSystem) Exists(CompletePath string) bool {
+	CompletePath = fs.CleanPath(CompletePath)
+	_, err := os.Stat(CompletePath)
+	return err == nil
 }

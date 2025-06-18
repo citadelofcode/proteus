@@ -12,7 +12,7 @@ type Route struct {
 	// HTTP method for which the route is defined
 	Method string
 	// List of all route level middlewares configured.
-	middlewares []Middleware
+	Middlewares []Middleware
 }
 
 // Structure to hold all the routes and the associated routing logic.
@@ -104,10 +104,10 @@ func (rtr *Router) addRoute(Method string, RoutePath string, handlerFunc RouteHa
 	routeObj := Route{
 		RouteHandler: handlerFunc,
 		Method: Method,
-		middlewares: make([]Middleware, 0),
+		Middlewares: make([]Middleware, 0),
 	}
 
-	routeObj.middlewares = append(routeObj.middlewares, middlewareList...)
+	routeObj.Middlewares = append(routeObj.Middlewares, middlewareList...)
 	rtr.routeTree.Insert(RoutePath, &routeObj)
 	return nil
 }
@@ -121,12 +121,14 @@ func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
 				RouteAfterPrefix := strings.TrimPrefix(routePath, routeKey)
 				RouteAfterPrefix = CleanRoute(RouteAfterPrefix)
 				FinalPath := filepath.Join(TargetPath, RouteAfterPrefix)
-				request.Locals["StaticFilePath"] = FinalPath
-				finalRoute := new(Route)
-				finalRoute.Method = request.Method
-				finalRoute.RouteHandler = StaticFileHandler
-				finalRoute.middlewares = make([]Middleware, 0)
-				return finalRoute, nil
+				if rtr.fs.Exists(FinalPath) {
+					request.Locals["StaticFilePath"] = FinalPath
+					finalRoute := new(Route)
+					finalRoute.Method = request.Method
+					finalRoute.RouteHandler = StaticFileHandler
+					finalRoute.Middlewares = make([]Middleware, 0)
+					return finalRoute, nil
+				}
 			}
 		}
 	}
@@ -151,6 +153,13 @@ func (rtr *Router) Match(request *HttpRequest) (*Route, error) {
 			finalRoute = route
 			break
 		}
+	}
+
+	if finalRoute == nil {
+		reError := new(RoutingError)
+		reError.RoutePath = routePath
+		reError.Message = "matchRoute: A match was not for the HTTP method and route combination"
+		return nil, reError
 	}
 
 	return finalRoute, nil

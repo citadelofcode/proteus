@@ -24,10 +24,9 @@ func Test_MiddlewareProcessing(t * testing.T) {
 		{ "Processing middleware without Stop Invocation", MwWithoutStop, true },
 	}
 
-	testServer := internal.NewServer("", 0)
-	testRequest, testResponse := TCParams(t)
-	testRequest.Server = testServer
-	testResponse.Server = testServer
+	testServer := NewTestServer(t)
+	testRequest := NewTestRequest(t, testServer, nil)
+	testResponse := NewTestResponse(t, testRequest.Version, testServer, nil)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {

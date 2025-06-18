@@ -9,6 +9,7 @@ import (
 
 // Test case to validate the working of the JsonParser() middleware to parse JSON objects as payloads.
 func Test_JsonParser_ObjectParse(t *testing.T) {
+	TestServer := NewTestServer(t)
 	JsonParser := internal.JsonParser()
 	testCases := []struct {
 		Name string
@@ -22,7 +23,8 @@ func Test_JsonParser_ObjectParse(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			request, response := TCParams(tt)
+			request := NewTestRequest(tt, TestServer, nil)
+			response := NewTestResponse(tt, request.Version, TestServer, nil)
 			request.BodyBytes = []byte(testCase.InPayload)
 			request.AddHeader("Content-Type", "application/json")
 			JsonParser(request, response, Stop)
@@ -40,6 +42,7 @@ func Test_JsonParser_ObjectParse(t *testing.T) {
 
 // Test case to validate the working of the JsonParser() middleware to parse JSON arrays as payloads.
 func Test_JsonParser_ArrayParse(t *testing.T) {
+	TestServer := NewTestServer(t)
 	JsonParser := internal.JsonParser()
 	testCases := []struct {
 		Name string
@@ -52,7 +55,8 @@ func Test_JsonParser_ArrayParse(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			request, response := TCParams(tt)
+			request := NewTestRequest(tt, TestServer, nil)
+			response := NewTestResponse(tt, request.Version, TestServer, nil)
 			request.BodyBytes = []byte(testCase.InPayload)
 			request.AddHeader("Content-Type", "application/json")
 			JsonParser(request, response, Stop)
@@ -70,6 +74,7 @@ func Test_JsonParser_ArrayParse(t *testing.T) {
 
 // Test case to validate how JsonParser() middleware affects non-JSON payloads. It checks if the request body still remains "nil" after middleware execution for non-JSON payloads.
 func Test_JsonParser_NonJson(t *testing.T) {
+	TestServer := NewTestServer(t)
 	JsonParser := internal.JsonParser()
 	testCases := []struct {
 		Name string
@@ -82,7 +87,8 @@ func Test_JsonParser_NonJson(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			request, response := TCParams(tt)
+			request := NewTestRequest(tt, TestServer, nil)
+			response := NewTestResponse(tt, request.Version, TestServer, nil)
 			request.BodyBytes = []byte(testCase.IpPayload)
 			request.AddHeader("Content-Type", testCase.IpContentType)
 			JsonParser(request, response, Stop)
@@ -97,6 +103,7 @@ func Test_JsonParser_NonJson(t *testing.T) {
 
 // Test case to validate how the UrlEncoded() middleware works for request payloads of type - "application/x-www-form-urlencoded".
 func Test_UrlEncoded_ValidPayloads(t *testing.T) {
+	TestServer := NewTestServer(t)
 	UrlEncoded := internal.UrlEncoded()
 	testCases := []struct {
 		Name string
@@ -110,7 +117,8 @@ func Test_UrlEncoded_ValidPayloads(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			request, response := TCParams(tt)
+			request := NewTestRequest(tt, TestServer, nil)
+			response := NewTestResponse(tt, request.Version, TestServer, nil)
 			request.AddHeader("Content-Type", "application/x-www-form-urlencoded")
 			request.BodyBytes = []byte(testCase.IpPayload)
 			UrlEncoded(request, response, Stop)
@@ -128,6 +136,7 @@ func Test_UrlEncoded_ValidPayloads(t *testing.T) {
 
 // Test case to validate how the UrlEncoded() middleware works for request payloads not of type - "application/x-www-form-urlencoded".
 func Test_UrlEncoded_InvalidPayloads(t *testing.T) {
+	TestServer := NewTestServer(t)
 	UrlEncoded := internal.UrlEncoded()
 	testCases := []struct {
 		Name string
@@ -140,7 +149,8 @@ func Test_UrlEncoded_InvalidPayloads(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			request, response := TCParams(tt)
+			request := NewTestRequest(tt, TestServer, nil)
+			response := NewTestResponse(tt, request.Version, TestServer, nil)
 			request.BodyBytes = []byte(testCase.IpPayload)
 			request.AddHeader("Content-Type", testCase.IpContentType)
 			UrlEncoded(request, response, Stop)
@@ -155,6 +165,7 @@ func Test_UrlEncoded_InvalidPayloads(t *testing.T) {
 
 // Test case to validate how either of the middlewares - JsonParser() and UrlEncoded() behave when there is no content type header present.
 func Test_BodyParser_NoContentType(t *testing.T) {
+	TestServer := NewTestServer(t)
 	JsonParser := internal.JsonParser()
 	UrlEncoded := internal.UrlEncoded()
 	testCases := []struct {
@@ -169,7 +180,8 @@ func Test_BodyParser_NoContentType(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			if strings.EqualFold(testCase.Middleware, "JsonParser") {
-				request, response := TCParams(tt)
+				request := NewTestRequest(tt, TestServer, nil)
+				response := NewTestResponse(tt, request.Version, TestServer, nil)
 				request.BodyBytes = []byte(testCase.IpPayload)
 				JsonParser(request, response, Stop)
 				if request.Body == nil {
@@ -180,7 +192,8 @@ func Test_BodyParser_NoContentType(t *testing.T) {
 			}
 
 			if strings.EqualFold(testCase.Middleware, "UrlEncoded") {
-				request, response := TCParams(tt)
+				request := NewTestRequest(tt, TestServer, nil)
+				response := NewTestResponse(tt, request.Version, TestServer, nil)
 				request.BodyBytes = []byte(testCase.IpPayload)
 				UrlEncoded(request, response, Stop)
 				if request.Body == nil {
