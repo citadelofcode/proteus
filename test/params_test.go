@@ -27,7 +27,7 @@ func Test_Params_Add(t *testing.T) {
 			if len(testParams) == testCase.ExpParamCount {
 				tt.Logf("The expected parameter count [%d] matches the actual parameter count [%d].", testCase.ExpParamCount, len(testParams))
 			} else {
-				tt.Errorf("The expected parameter count [%d] does not match the actual parameter count [%d].", testCase.ExpParamCount, len(testParams))
+				tt.Errorf(internal.TextColor.Red("The expected parameter count [%d] does not match the actual parameter count [%d]."), testCase.ExpParamCount, len(testParams))
 			}
 		})
 	}
@@ -51,7 +51,7 @@ func Test_Params_Get(t *testing.T) {
 			values, _ := testParams.Get(testCase.ParamKey)
 			if testCase.ExpParamValues == nil {
 				if values != nil {
-					tt.Errorf("Expected returned values array to be nil, but got a non-nil value instead - %v", values)
+					tt.Errorf(internal.TextColor.Red("Expected returned values array to be nil, but got a non-nil value instead - %#v"), values)
 				} else {
 					tt.Logf("Expected a nil slice, and got exactly that.")
 				}
@@ -62,7 +62,7 @@ func Test_Params_Get(t *testing.T) {
 			if slices.Equal(testCase.ExpParamValues, values) {
 				tt.Logf("The returned slice of values [%v], matches the expected slice of values [%v]", values, testCase.ExpParamValues)
 			} else {
-				tt.Errorf("The returned slice of values [%v], does not match the expected slice of values [%v]", values, testCase.ExpParamValues)
+				tt.Errorf(internal.TextColor.Red("The returned slice of values [%v], does not match the expected slice of values [%#v]"), values, testCase.ExpParamValues)
 			}
 		})
 	}

@@ -29,7 +29,7 @@ func Test_RoutePathNormalization(t *testing.T) {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			routeParts := internal.NormalizeRoute(testCase.RoutePath)
 			if len(routeParts) != testCase.ExpArgCount {
-				tt.Errorf("Number of route parts (%d) does not match the expected route part count (%d)", len(routeParts), testCase.ExpArgCount)
+				tt.Errorf(internal.TextColor.Red("Number of route parts (%d) does not match the expected route part count (%d)"), len(routeParts), testCase.ExpArgCount)
 			} else {
 				tt.Logf("Number of route parts (%d) matches the expected route part count (%d)", len(routeParts), testCase.ExpArgCount)
 			}
@@ -41,13 +41,13 @@ func Test_RoutePathNormalization(t *testing.T) {
 func Test_RouteTree_Create(t *testing.T) {
 	pt := internal.EmptyPrefixTree()
 	if pt.Root.Routes != nil {
-		t.Errorf("No route instance must be mapped to the root node of an empty prefix tree")
+		t.Error(internal.TextColor.Red("No route instance must be mapped to the root node of an empty prefix tree"))
 	} else {
 		t.Logf("No route instance has been mapped to the root node of the empty prefix tree as expected")
 	}
 
 	if len(pt.Root.Children) > 0 {
-		t.Errorf("The root node for an empty route tree cannot have children")
+		t.Error(internal.TextColor.Red("The root node for an empty route tree cannot have children"))
 	} else {
 		t.Logf("The root node does not have any children as expected for an empty route tree")
 	}
@@ -79,13 +79,13 @@ func Test_RouteTree_AddNGetRoute(t *testing.T) {
 			if slices.Contains(routes, testCase.AddedRoutePath) {
 				tt.Logf("The route %s was added successfully to the route tree.", testCase.RoutePath)
 			} else {
-				tt.Errorf("The route %s was not added to the route tree.", testCase.RoutePath)
+				tt.Errorf(internal.TextColor.Red("The route %s was not added to the route tree."), testCase.RoutePath)
 			}
 
 			if len(routes) == testCase.ExpRouteCount {
 				tt.Logf("The total route count in tree %d matches the expected route count %d", len(routes), testCase.ExpRouteCount)
 			} else {
-				tt.Errorf("The total route count in tree %d does not match the expected route count %d", len(routes), testCase.ExpRouteCount)
+				tt.Errorf(internal.TextColor.Red("The total route count in tree %d does not match the expected route count %d"), len(routes), testCase.ExpRouteCount)
 			}
 		})
 	}
@@ -112,13 +112,13 @@ func Test_RouteTree_MatchRoute(t *testing.T) {
 		t.Run(testCase.Name, func(tt *testing.T) {
 			matchInfo := pt.Match(testCase.RequestRoute)
 			if !strings.EqualFold(testCase.MappedRoute, matchInfo.MatchedPath) {
-				tt.Errorf("The matched route [%s] returned does not match the expected route path [%s]", matchInfo.MatchedPath, testCase.MappedRoute)
+				tt.Errorf(internal.TextColor.Red("The matched route [%s] returned does not match the expected route path [%s]"), matchInfo.MatchedPath, testCase.MappedRoute)
 			} else {
 				tt.Logf("The matched route [%s] returned matches the expected route path [%s]", matchInfo.MatchedPath, testCase.MappedRoute)
 			}
 
 			if len(matchInfo.Segments) != testCase.PathParamCount {
-				tt.Errorf("The number of path parameters returned (%d) does not match the expected parameter count (%d).", matchInfo.Segments.Length(), testCase.PathParamCount)
+				tt.Errorf(internal.TextColor.Red("The number of path parameters returned (%d) does not match the expected parameter count (%d)."), matchInfo.Segments.Length(), testCase.PathParamCount)
 			} else {
 				tt.Logf("The number of path parameters returned (%d) matches the expected parameter count (%d).", matchInfo.Segments.Length(), testCase.PathParamCount)
 			}

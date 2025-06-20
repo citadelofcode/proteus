@@ -27,7 +27,7 @@ func Test_GetHighestVersion(t *testing.T) {
 			if strings.EqualFold(maxVersion, testCase.ExpVersion) {
 				tt.Logf("The expected version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, maxVersion)
 			} else {
-				tt.Errorf("The expected version [%s] does not match the version returned by the utility function [%s].", testCase.ExpVersion, maxVersion)
+				tt.Errorf(internal.TextColor.Red("The expected version [%s] does not match the version returned by the utility function [%s]."), testCase.ExpVersion, maxVersion)
 			}
 		})
 	}
@@ -52,7 +52,7 @@ func Test_GetResponseVersion(t *testing.T) {
 			if strings.EqualFold(responseVersion, testCase.ExpVersion) {
 				tt.Logf("The expected response version [%s] matches the version returned by the utility function [%s].", testCase.ExpVersion, responseVersion)
 			} else {
-				tt.Errorf("The expected response version [%s] does not match the version returned by the utility function [%s].", testCase.ExpVersion, responseVersion)
+				tt.Errorf(internal.TextColor.Red("The expected response version [%s] does not match the version returned by the utility function [%s]."), testCase.ExpVersion, responseVersion)
 			}
 		})
 	}
@@ -84,9 +84,9 @@ func Test_IsHttpDate(t *testing.T) {
 				}
 			} else {
 				if got {
-					tt.Errorf("The given date string [%s] has been incorrectly classified as HTTP date", testCase.IpDateString)
+					tt.Errorf(internal.TextColor.Red("The given date string [%s] has been incorrectly classified as HTTP date"), testCase.IpDateString)
 				} else {
-					tt.Errorf("The given date string [%s] has been incorrectly classified as not a HTTP date", testCase.IpDateString)
+					tt.Errorf(internal.TextColor.Red("The given date string [%s] has been incorrectly classified as not a HTTP date"), testCase.IpDateString)
 				}
 			}
 		})
@@ -114,7 +114,7 @@ func Test_CleanRoute(t *testing.T) {
 			if strings.EqualFold(got, testCase.ExpRoute) {
 				tt.Logf("The input route [%s] matches the expected route [%s]", testCase.IpRoute, got)
 			} else {
-				tt.Errorf("The input route [%s] does not match the expected route [%s]", testCase.IpRoute, got)
+				tt.Errorf(internal.TextColor.Red("The input route [%s] does not match the expected route [%s]"), testCase.IpRoute, got)
 			}
 		})
 	}
@@ -124,7 +124,7 @@ func Test_CleanRoute(t *testing.T) {
 func Test_GetAllVersions(t *testing.T) {
 	versions := internal.GetAllVersions()
 	if len(versions) != 3 {
-		t.Errorf("Expected 3 compatible versions, but got %d versions instead", len(versions))
+		t.Errorf(internal.TextColor.Red("Expected 3 compatible versions, but got %d versions instead"), len(versions))
 		return
 	} else {
 		t.Log("There are 3 versions of HTTP supported by the server as expected")
@@ -132,17 +132,17 @@ func Test_GetAllVersions(t *testing.T) {
 
 	allVersionsFound := true
 	if !slices.Contains(versions, "0.9") {
-		t.Error("HTTP/0.9 was not found among the list of compatible versions")
+		t.Error(internal.TextColor.Red("HTTP/0.9 was not found among the list of compatible versions"))
 		allVersionsFound = false
 	}
 
 	if !slices.Contains(versions, "1.0") {
-		t.Error("HTTP/1.0 was not found among the list of compatible versions")
+		t.Error(internal.TextColor.Red("HTTP/1.0 was not found among the list of compatible versions"))
 		allVersionsFound = false
 	}
 
 	if !slices.Contains(versions, "1.1") {
-		t.Error("HTTP/1.1 was not found among the list of compatible versions")
+		t.Error(internal.TextColor.Red("HTTP/1.1 was not found among the list of compatible versions"))
 		allVersionsFound = false
 	}
 
@@ -170,7 +170,7 @@ func Test_GetAllowedMethods(t *testing.T) {
 			if strings.EqualFold(allowedMethods, testCase.OpMethods) {
 				tt.Logf("The list of allowed methods [%s] received for version [%s] matches the expected list of methods", allowedMethods, testCase.IpVersion)
 			} else {
-				tt.Errorf("The list of allowed methods [%s] received for version [%s] does not match the expected list of methods", allowedMethods, testCase.IpVersion)
+				tt.Errorf(internal.TextColor.Red("The list of allowed methods [%s] received for version [%s] does not match the expected list of methods"), allowedMethods, testCase.IpVersion)
 			}
 		})
 	}
@@ -203,9 +203,9 @@ func Test_IsMethodAllowed(t *testing.T) {
 				}
 			} else {
 				if isAllowed {
-					tt.Errorf("The given method [%s] for version [%s] was incorrectly determined as allowed.", testCase.IpMethod, testCase.IpVersion)
+					tt.Errorf(internal.TextColor.Red("The given method [%s] for version [%s] was incorrectly determined as allowed."), testCase.IpMethod, testCase.IpVersion)
 				} else {
-					tt.Errorf("The given method [%s] for version [%s] was incorrectly determined as not allowed.", testCase.IpMethod, testCase.IpVersion)
+					tt.Errorf(internal.TextColor.Red("The given method [%s] for version [%s] was incorrectly determined as not allowed."), testCase.IpMethod, testCase.IpVersion)
 				}
 			}
 		})

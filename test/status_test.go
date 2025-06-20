@@ -23,7 +23,7 @@ func Test_GetStatusMessage(t *testing.T) {
 			if strings.EqualFold(message, testCase.ExpOutput) {
 				t.Logf("The expected status message [%s] matches the received status message [%s].", testCase.ExpOutput, message)
 			} else {
-				t.Errorf("The expected status message [%s] does not match the received status message [%s].", testCase.ExpOutput, message)
+				t.Errorf(internal.TextColor.Red("The expected status message [%s] does not match the received status message [%s]."), testCase.ExpOutput, message)
 			}
 		})
 	}

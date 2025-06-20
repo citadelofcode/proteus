@@ -276,7 +276,17 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s %d %d ms - %s", request.Method, request.ResourcePath, response.StatusCode, reqProcessingTime, responseContentLength)
+		statusString := ""
+		if response.StatusCode >= 200 && response.StatusCode < 300 {
+			statusString = TextColor.Green(fmt.Sprintf("%d", response.StatusCode))
+		} else if response.StatusCode >= 300 && response.StatusCode < 400 {
+			statusString = TextColor.Cyan(fmt.Sprintf("%d", response.StatusCode))
+		} else if response.StatusCode >= 400 && response.StatusCode < 500 {
+			statusString = TextColor.Yellow(fmt.Sprintf("%d", response.StatusCode))
+		} else if response.StatusCode >= 500 {
+			statusString = TextColor.Red(fmt.Sprintf("%d", response.StatusCode))
+		}
+		srv.requestLogger.Printf("%s %s %s %d ms - %s", request.Method, request.ResourcePath, statusString, reqProcessingTime, responseContentLength)
 	} else if strings.EqualFold(srv.logFormat, TINY_LOGGER) {
 		responseContentLength, ok := response.Headers.Get("Content-Length")
 		if !ok {
@@ -294,7 +304,7 @@ func (srv *HttpServer) logStatus(request *HttpRequest, response *HttpResponse) {
 		if !ok {
 			responseContentLength = "-"
 		}
-		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, GetRfc1123Time(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
+		srv.requestLogger.Printf("%s %s \"%s %s HTTP/%s\" %d %s", request.ClientAddress, GetCLFTime(), request.Method, request.ResourcePath, request.Version, response.StatusCode, responseContentLength)
 	}
 }
 
@@ -323,8 +333,10 @@ func (srv *HttpServer) SetLogger(logFormat string) {
 	allowedLogFormats := []string { COMMON_LOGGER, DEV_LOGGER, TINY_LOGGER, SHORT_LOGGER }
 	if slices.Contains(allowedLogFormats, logFormat) {
 		srv.logFormat = logFormat
+		srv.Log(fmt.Sprintf("The request logging format has been set to '%s'.", logFormat), WARN_LEVEL)
 	} else {
 		srv.logFormat = COMMON_LOGGER
+		srv.Log(fmt.Sprintf("The log format value given was not valid so the default value - %s has been setup.", COMMON_LOGGER), ERROR_LEVEL)
 	}
 }
 
@@ -364,5 +376,11 @@ func (srv * HttpServer) Listen() {
 func (srv *HttpServer) Log(message string, level string) {
 	currentTime := GetRfc1123Time()
 	serverName := GetServerDefaults("server_name").(string)
-	srv.requestLogger.Printf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
+	if level == ERROR_LEVEL {
+		srv.requestLogger.Printf(TextColor.Red("%s %s %s %s"), currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
+	} else if level == WARN_LEVEL {
+		srv.requestLogger.Printf(TextColor.Yellow("%s %s %s %s"), currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
+	} else {
+		srv.requestLogger.Printf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
+	}
 }
