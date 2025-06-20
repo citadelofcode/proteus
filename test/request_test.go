@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"github.com/citadelofcode/proteus/internal"
 )
 
 // Test case to validate the HTTP request message read and parse functionality.
@@ -28,36 +29,36 @@ func Test_Request_Read(t *testing.T) {
 			testReq := NewTestRequest(tt, testServer, strings.NewReader(testCase.InputRequest))
 			err := testReq.Read()
 			if err != nil && err != io.EOF {
-				tt.Errorf("The given request could not be parsed. Error :: %s", err.Error())
+				tt.Errorf(internal.TextColor.Red("The given request could not be parsed. Error :: %s"), err.Error())
 				return
 			}
 
 			if !strings.EqualFold(testReq.Method, testCase.ExpHttpMethod) {
-				tt.Errorf("Expected request method was to be %s but got %s", testCase.ExpHttpMethod, testReq.Method)
+				tt.Errorf(internal.TextColor.Red("Expected request method was to be %s but got %s"), testCase.ExpHttpMethod, testReq.Method)
 			} else {
 				tt.Logf("Expected requested method %s matches the returned value %s", testCase.ExpHttpMethod, testReq.Method)
 			}
 
 			if !strings.EqualFold(testReq.ResourcePath, testCase.ExpHttpReqPath) {
-				tt.Errorf("Expected request path was to be %s but got %s", testCase.ExpHttpReqPath, testReq.ResourcePath)
+				tt.Errorf(internal.TextColor.Red("Expected request path was to be %s but got %s"), testCase.ExpHttpReqPath, testReq.ResourcePath)
 			} else {
 				tt.Logf("Expected request path %s matches the returned request path %s", testCase.ExpHttpReqPath, testReq.ResourcePath)
 			}
 
 			if !strings.EqualFold(testReq.Version, testCase.ExpHttpVersion) {
-				tt.Errorf("Expected request version was to be %s but got %s", testCase.ExpHttpVersion, testReq.Version)
+				tt.Errorf(internal.TextColor.Red("Expected request version was to be %s but got %s"), testCase.ExpHttpVersion, testReq.Version)
 			} else {
 				tt.Logf("Expected request version %s matches the returned request version %s", testCase.ExpHttpVersion, testReq.Version)
 			}
 
 			if testReq.Headers.Length() != testCase.ExpHeaderCount {
-				tt.Errorf("Expected header count in the request was to be %d instead the request had %d headers", testCase.ExpHeaderCount, testReq.Headers.Length())
+				tt.Errorf(internal.TextColor.Red("Expected header count in the request was to be %d instead the request had %d headers"), testCase.ExpHeaderCount, testReq.Headers.Length())
 			} else {
 				tt.Logf("Expected header count in the request %d matches the returned request header count %d", testCase.ExpHeaderCount, testReq.Headers.Length())
 			}
 
 			if testReq.Query.Length() != testCase.ExpQpCount {
-				tt.Errorf("Expected query parameters count in the request was to be %d instead the request had %d query parameters", testCase.ExpQpCount, testReq.Query.Length())
+				tt.Errorf(internal.TextColor.Red("Expected query parameters count in the request was to be %d instead the request had %d query parameters"), testCase.ExpQpCount, testReq.Query.Length())
 			} else {
 				tt.Logf("Expected query parameter count in the request %d matches the returned request query parameter count %d", testCase.ExpQpCount, testReq.Query.Length())
 			}
@@ -94,9 +95,9 @@ func Test_Request_AddHeader(t *testing.T) {
 				}
 			} else {
 				if headerExists {
-					tt.Errorf("An invalid header [%s] with value [%s] has been added to the request headers collection", testCase.InputHeader, testCase.InputValue)
+					tt.Errorf(internal.TextColor.Red("An invalid header [%s] with value [%s] has been added to the request headers collection"), testCase.InputHeader, testCase.InputValue)
 				} else {
-					tt.Errorf("A valid header [%s] with value [%s] has not been aded to the request headers collection", testCase.InputHeader, testCase.InputValue)
+					tt.Errorf(internal.TextColor.Red("A valid header [%s] with value [%s] has not been aded to the request headers collection"), testCase.InputHeader, testCase.InputValue)
 				}
 			}
 		})

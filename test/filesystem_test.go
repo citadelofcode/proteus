@@ -14,7 +14,7 @@ func Test_FileSystem_IsAbsolute(t *testing.T) {
 	AbsFolderNoExists := filepath.Join(root, "abs-noexists")
 	err := CreateDirectories(t, root, []string{ "abs-exists" })
 	if err != nil {
-		t.Fatalf("Error occurred while creating test folders: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test folders: %s"), err.Error())
 		return
 	}
 
@@ -31,11 +31,11 @@ func Test_FileSystem_IsAbsolute(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(tt *testing.T) {
-			isAbolsute := fs.IsAbsolute(testCase.IpPath)
-			if isAbolsute == testCase.ExpOp {
+			isAbsolute := fs.IsAbsolute(testCase.IpPath)
+			if isAbsolute == testCase.ExpOp {
 				tt.Logf("The result returned by isAbsolute() for path [%s] matches the expected output", testCase.IpPath)
 			} else {
-				tt.Errorf("The result returned by isAbsolute() for path [%s] does not match the expected output", testCase.IpPath)
+				tt.Errorf(internal.TextColor.Red("The result returned by isAbsolute() for path [%s] does not match the expected output"), testCase.IpPath)
 			}
 		})
 	}
@@ -48,7 +48,7 @@ func Test_FileSystem_IsDirectory(t *testing.T) {
 	NotExistsFolder := filepath.Join(root, "foldertwo")
 	err := CreateDirectories(t, root, []string{ "folderone" })
 	if err != nil {
-		t.Fatalf("Error occurred while creating test folders: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test folders: %s"), err.Error())
 		return
 	}
 
@@ -57,7 +57,7 @@ func Test_FileSystem_IsDirectory(t *testing.T) {
 		"exists.txt": []byte("Hello, this is a sample text file"),
 	})
 	if err != nil {
-		t.Fatalf("Error occurred while creating test file: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test file: %s"), err.Error())
 		return
 	}
 
@@ -80,7 +80,7 @@ func Test_FileSystem_IsDirectory(t *testing.T) {
 			if isDir == testCase.ExpOp {
 				tt.Logf("The result returned by isDirectory() for path [%s] matches the expected output", testCase.IpPath)
 			} else {
-				tt.Errorf("The result returned by isDirectory() for path [%s] does not match the expected output", testCase.IpPath)
+				tt.Errorf(internal.TextColor.Red("The result returned by isDirectory() for path [%s] does not match the expected output"), testCase.IpPath)
 			}
 		})
 	}
@@ -94,14 +94,14 @@ func Test_FileSystem_GetFile(t *testing.T) {
 	NotExistsFile := filepath.Join(root, "not-exists.txt")
 	err := CreateDirectories(t, root, []string{ "folder-tc" })
 	if err != nil {
-		t.Fatalf("Error occurred while creating test folder: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test folder: %s"), err.Error())
 		return
 	}
 	err = CreateFiles(t, root, map[string][]byte{
 		"exists.txt": []byte("This is a sample text!"),
 	})
 	if err != nil {
-		t.Fatalf("Error occurred while creating test file: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test file: %s"), err.Error())
 		return
 	}
 	fs := new(internal.FileSystem)
@@ -125,12 +125,12 @@ func Test_FileSystem_GetFile(t *testing.T) {
 				if strings.EqualFold(testCase.ExpError, "FileSystemError") {
 					fsErr, ok := err.(*internal.FileSystemError)
 					if !ok {
-						tt.Errorf("Expected a FileSystemError, but received something else: %#v", err)
+						tt.Errorf(internal.TextColor.Red("Expected a FileSystemError, but received something else: %#v"), err)
 					} else {
 						tt.Logf("Expected a FileSystemError, and received an error of same type - %#v", *fsErr)
 					}
 				} else {
-					tt.Errorf("An error was not expected, but yet received one - %s", err.Error())
+					tt.Errorf(internal.TextColor.Red("An error was not expected, but yet received one - %s"), err.Error())
 				}
 				return
 			}
@@ -138,19 +138,19 @@ func Test_FileSystem_GetFile(t *testing.T) {
 			if file.Size() == testCase.ExpSize {
 				tt.Logf("The expected file size [%d] matches the computed file size [%d]", testCase.ExpSize, file.Size())
 			} else {
-				tt.Errorf("The expected file size [%d] does not match the computed file size [%d]", testCase.ExpSize, file.Size())
+				tt.Errorf(internal.TextColor.Red("The expected file size [%d] does not match the computed file size [%d]"), testCase.ExpSize, file.Size())
 			}
 
 			if strings.EqualFold(file.MediaType(), testCase.ExpMediaType) {
 				tt.Logf("The expected media type [%s] matches the fetched file's media type [%s]", testCase.ExpMediaType, file.MediaType())
 			} else {
-				tt.Errorf("The expected media type [%s] does not match the fetched file's media type [%s]", testCase.ExpMediaType, file.MediaType())
+				tt.Errorf(internal.TextColor.Red("The expected media type [%s] does not match the fetched file's media type [%s]"), testCase.ExpMediaType, file.MediaType())
 			}
 
 			if strings.EqualFold(file.Extension(), testCase.ExpExtension) {
 				tt.Logf("The expected file extension [%s] matches the fetched file's extension [%s]", testCase.ExpExtension, file.Extension())
 			} else {
-				tt.Errorf("The expected file extension [%s] does not match the fetched file's extension [%s]", testCase.ExpExtension, file.Extension())
+				tt.Errorf(internal.TextColor.Red("The expected file extension [%s] does not match the fetched file's extension [%s]"), testCase.ExpExtension, file.Extension())
 			}
 		})
 	}
@@ -164,19 +164,19 @@ func Test_FileSystem_FetchContents(t *testing.T) {
 		"file-to-be-read.txt": []byte(FileContentsToBeWritten),
 	})
 	if err != nil {
-		t.Fatalf("Error occurred while creating test file: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating test file: %s"), err.Error())
 		return
 	}
 	FileToBeRead := filepath.Join(root, "file-to-be-read.txt")
 	fs := new(internal.FileSystem)
 	file, err := fs.GetFile(FileToBeRead)
 	if err != nil {
-		t.Errorf("Error occurred while getting file properties, instead of successful parse opertion: %s", err.Error())
+		t.Errorf(internal.TextColor.Red("Error occurred while getting file properties, instead of successful parse opertion: %s"), err.Error())
 		return
 	}
 	fileContentBytes, err := file.Contents()
 	if err != nil {
-		t.Errorf("Error occurred while reading the file contents, instead of successful read opertion: %s", err.Error())
+		t.Errorf(internal.TextColor.Red("Error occurred while reading the file contents, instead of successful read opertion: %s"), err.Error())
 		return
 	}
 
@@ -184,7 +184,7 @@ func Test_FileSystem_FetchContents(t *testing.T) {
 	if strings.EqualFold(FileContentsToBeWritten, fileContents) {
 		t.Logf("The contents of file [%s] read from the file system matches the expected content", FileToBeRead)
 	} else {
-		t.Errorf("The contents of file [%s] read from the file system does not match the expected content", FileToBeRead)
+		t.Errorf(internal.TextColor.Red("The contents of file [%s] read from the file system does not match the expected content"), FileToBeRead)
 	}
 }
 
@@ -193,14 +193,14 @@ func Test_FileSystem_Exists(t *testing.T) {
 	root := t.TempDir()
 	err := CreateDirectories(t, root, []string{ "static" })
 	if err != nil {
-		t.Fatalf("Error occurred while creating temporary folders for testing: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating temporary folders for testing: %s"), err.Error())
 		return
 	}
 	err = CreateFiles(t, root, map[string][]byte{
 		"home.html": []byte("<p>Hello, World!</p>"),
 	})
 	if err != nil {
-		t.Fatalf("Error occurred while creating temporary files for testing: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating temporary files for testing: %s"), err.Error())
 		return
 	}
 	fs := new(internal.FileSystem)
@@ -221,7 +221,7 @@ func Test_FileSystem_Exists(t *testing.T) {
 			if isExists == testCase.OpValue {
 				tt.Logf("The expected value [%t] matches the returned value [%t].", testCase.OpValue, isExists)
 			} else {
-				tt.Errorf("The expected value [%t] does not match the returned value [%t].", testCase.OpValue, isExists)
+				tt.Errorf(internal.TextColor.Red("The expected value [%t] does not match the returned value [%t]."), testCase.OpValue, isExists)
 			}
 		})
 	}

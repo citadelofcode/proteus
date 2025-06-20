@@ -34,7 +34,7 @@ func Test_JsonParser_ObjectParse(t *testing.T) {
 			if isEqual {
 				tt.Log("The expected JSON payload matches the parsed JSON object payload.")
 			} else {
-				tt.Error("The expected JSON payload does not match the parsed JSON object payload.")
+				tt.Error(internal.TextColor.Red("The expected JSON payload does not match the parsed JSON object payload."))
 			}
 		})
 	}
@@ -66,7 +66,7 @@ func Test_JsonParser_ArrayParse(t *testing.T) {
 			if isEqual {
 				tt.Log("The expected JSON payload matches the parsed JSON array payload.")
 			} else {
-				tt.Error("The expected JSON payload does not match the parsed JSON array payload.")
+				tt.Error(internal.TextColor.Red("The expected JSON payload does not match the parsed JSON array payload."))
 			}
 		})
 	}
@@ -95,7 +95,7 @@ func Test_JsonParser_NonJson(t *testing.T) {
 			if request.Body == nil {
 				tt.Logf("The request body is 'nil' as expected, for payload [%s] of content type [%s]", testCase.IpPayload, testCase.IpContentType)
 			} else {
-				tt.Logf("The request body is not 'nil' as expected, for payload [%s] of content type [%s]", testCase.IpPayload, testCase.IpContentType)
+				tt.Errorf(internal.TextColor.Red("The request body is not 'nil' as expected, for payload [%s] of content type [%s]"), testCase.IpPayload, testCase.IpContentType)
 			}
 		})
 	}
@@ -128,7 +128,7 @@ func Test_UrlEncoded_ValidPayloads(t *testing.T) {
 			if isEqual {
 				tt.Log("The expected request payload matches the processed payload.")
 			} else {
-				tt.Error("The expected request payload does not match the processed payload.")
+				tt.Error(internal.TextColor.Red("The expected request payload does not match the processed payload."))
 			}
 		})
 	}
@@ -157,7 +157,7 @@ func Test_UrlEncoded_InvalidPayloads(t *testing.T) {
 			if request.Body == nil {
 				tt.Logf("The request body is 'nil' as expected, for payload [%s] of content type [%s]", testCase.IpPayload, testCase.IpContentType)
 			} else {
-				tt.Logf("The request body is not 'nil' as expected, for payload [%s] of content type [%s]", testCase.IpPayload, testCase.IpContentType)
+				tt.Errorf(internal.TextColor.Red("The request body is not 'nil' as expected, for payload [%s] of content type [%s]"), testCase.IpPayload, testCase.IpContentType)
 			}
 		})
 	}
@@ -187,7 +187,7 @@ func Test_BodyParser_NoContentType(t *testing.T) {
 				if request.Body == nil {
 					tt.Logf("The request body is 'nil' as expected, for payload [%s]", testCase.IpPayload)
 				} else {
-					tt.Logf("The request body is not 'nil' as expected, for payload [%s]", testCase.IpPayload)
+					tt.Errorf(internal.TextColor.Red("The request body is not 'nil' as expected, for payload [%s]"), testCase.IpPayload)
 				}
 			}
 
@@ -199,7 +199,7 @@ func Test_BodyParser_NoContentType(t *testing.T) {
 				if request.Body == nil {
 					tt.Logf("The request body is 'nil' as expected, for payload [%s]", testCase.IpPayload)
 				} else {
-					tt.Logf("The request body is not 'nil' as expected, for payload [%s]", testCase.IpPayload)
+					tt.Errorf(internal.TextColor.Red("The request body is not 'nil' as expected, for payload [%s]"), testCase.IpPayload)
 				}
 			}
 		})

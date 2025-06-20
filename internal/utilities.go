@@ -84,6 +84,12 @@ func GetRfc1123Time() string {
 	return currentTime.Format(time.RFC1123)
 }
 
+// Gets the current UTC time in CLF (Common Log Format).
+func GetCLFTime() string {
+	currentTime := time.Now().UTC()
+	return currentTime.Format("[02/Jan/2006:15:04:05 -0700]")
+}
+
 // Checks if the given date time value corresponds to a valid HTTP date and returns two values.
 // First returned is a boolean value which indicates if the given date value conforms to a valid format.
 // Second returned is a time.Time value corresponding to the given string and if its invalid, returns the zero time.

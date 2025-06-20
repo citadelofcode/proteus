@@ -39,7 +39,7 @@ func Test_Response_Write(t *testing.T) {
 
 			if testCase.ExpErr == "" {
 				if err != nil {
-					tt.Errorf("Was not expecting an error and yet got this error - %v", err)
+					tt.Errorf(internal.TextColor.Red("Was not expecting an error and yet got this error - %#v"), err)
 					return
 				}
 			}
@@ -47,7 +47,7 @@ func Test_Response_Write(t *testing.T) {
 			if testCase.ExpErr == "ResponseError" {
 				respErr, ok := err.(*internal.ResponseError)
 				if !ok {
-					tt.Errorf("Was expecting a response error, but got this error instead - %v", err)
+					tt.Errorf(internal.TextColor.Red("Was expecting a response error, but got this error instead - %#v"), err)
 				} else {
 					tt.Logf("Was expecting a response error and got one - %v", respErr)
 				}
@@ -59,7 +59,7 @@ func Test_Response_Write(t *testing.T) {
 			if strings.EqualFold(opString, testCase.ExpResponse) {
 				tt.Logf("The expected response [%s] matches the response written by the write function [%s].", testCase.ExpResponse, opString)
 			} else {
-				tt.Errorf("The expected response [%s] does not match the response written by the write function [%s].", testCase.ExpResponse, opString)
+				tt.Errorf(internal.TextColor.Red("The expected response [%s] does not match the response written by the write function [%s]."), testCase.ExpResponse, opString)
 			}
 		})
 	}
@@ -84,7 +84,7 @@ func Test_Response_DefaultHeaders(t *testing.T) {
 			if testResponse.Headers.Length() == testCase.ExpHeaderCount {
 				tt.Logf("The expected header count [%d] matches the actual header count [%d] for HTTP/[%s] response instance", testCase.ExpHeaderCount, testResponse.Headers.Length(), testCase.HttpVersion)
 			} else {
-				tt.Errorf("The expected header count [%d] does not match the actual header count [%d] for HTTP/[%s] response instance", testCase.ExpHeaderCount, testResponse.Headers.Length(), testCase.HttpVersion)
+				tt.Errorf(internal.TextColor.Red("The expected header count [%d] does not match the actual header count [%d] for HTTP/[%s] response instance"), testCase.ExpHeaderCount, testResponse.Headers.Length(), testCase.HttpVersion)
 			}
 		})
 	}
@@ -119,9 +119,9 @@ func Test_Response_AddHeader(t *testing.T) {
 				}
 			} else {
 				if headerExists {
-					tt.Errorf("An invalid header [%s] with value [%s] has been added to the response headers collection", testCase.InputHeader, testCase.InputValue)
+					tt.Errorf(internal.TextColor.Red("An invalid header [%s] with value [%s] has been added to the response headers collection"), testCase.InputHeader, testCase.InputValue)
 				} else {
-					tt.Errorf("A valid header [%s] with value [%s] has not been aded to the response headers collection", testCase.InputHeader, testCase.InputValue)
+					tt.Errorf(internal.TextColor.Red("A valid header [%s] with value [%s] has not been aded to the response headers collection"), testCase.InputHeader, testCase.InputValue)
 				}
 			}
 		})

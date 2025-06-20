@@ -42,7 +42,7 @@ func Test_MiddlewareProcessing(t * testing.T) {
 			if testCase.ExpProcessNext == processNext {
 				tt.Log("The expected value for process next flag matches the value received after middleware processing")
 			} else {
-				tt.Error("The expected value for process next flag does not match the value received after middleware processing")
+				tt.Error(internal.TextColor.Red("The expected value for process next flag does not match the value received after middleware processing"))
 			}
 		})
 	}

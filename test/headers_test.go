@@ -27,7 +27,7 @@ func Test_Headers_Add(t *testing.T) {
 			if len(testHeaders) == testCase.ExpHdrCount {
 				tt.Logf("The expected parameter count [%d] matches the actual parameter count [%d].", testCase.ExpHdrCount, len(testHeaders))
 			} else {
-				tt.Errorf("The expected parameter count [%d] does not match the actual parameter count [%d].", testCase.ExpHdrCount, len(testHeaders))
+				tt.Errorf(internal.TextColor.Red("The expected parameter count [%d] does not match the actual parameter count [%d]."), testCase.ExpHdrCount, len(testHeaders))
 			}
 		})
 	}
@@ -56,13 +56,13 @@ func Test_Headers_Get(t *testing.T) {
 				if strings.EqualFold(value, testCase.ExpHdrValue) {
 					tt.Logf("The expected value [%s] matches the returned value [%s]", testCase.ExpHdrValue, value)
 				} else {
-					tt.Errorf("The expected value [%s] does not match the returned value [%s]", testCase.ExpHdrValue, value)
+					tt.Errorf(internal.TextColor.Red("The expected value [%s] does not match the returned value [%s]"), testCase.ExpHdrValue, value)
 				}
 			} else {
 				if strings.EqualFold(testCase.ExpHdrValue, "") {
 					tt.Logf("As expected, the key [%s] was not found in the Headers collection", testCase.HdrKey)
 				} else {
-					tt.Errorf("The key [%s] was supposed to be absent in the Headers collection, but value returned [%s] shows it was present.", testCase.HdrKey, value)
+					tt.Errorf(internal.TextColor.Red("The key [%s] was supposed to be absent in the Headers collection, but value returned [%s] shows it was present."), testCase.HdrKey, value)
 				}
 			}
 		})

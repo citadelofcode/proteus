@@ -13,7 +13,7 @@ func Test_Router_Static(t *testing.T) {
 	root := t.TempDir()
 	err := CreateStaticAssets(t, root)
 	if err != nil {
-		t.Fatalf("Error occurred while creating static test assets: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating static test assets: %s"), err.Error())
 		return
 	}
 	staticFolder := filepath.Join(root, "static")
@@ -37,12 +37,12 @@ func Test_Router_Static(t *testing.T) {
 				if strings.EqualFold(testCase.ExpectedErr, "RoutingError") {
 					rtrError, ok := err.(*internal.RoutingError)
 					if !ok {
-						tt.Errorf("Expected a routing error while adding static route to router, but got this instead - %#v", err)
+						tt.Errorf(internal.TextColor.Red("Expected a routing error while adding static route to router, but got this instead - %#v"), err)
 					} else {
 						tt.Logf("Was expecting a routing error and got a routing error as well - %#v", rtrError)
 					}
 				} else {
-					tt.Errorf("Was not expecting an error for adding static route to router and yet got this instead - %#v", err)
+					tt.Errorf(internal.TextColor.Red("Was not expecting an error for adding static route to router and yet got this instead - %#v"), err)
 				}
 				return
 			}
@@ -60,14 +60,14 @@ func Test_Router_StaticMatch(t *testing.T) {
 	root := t.TempDir()
 	err := CreateStaticAssets(t, root)
 	if err != nil {
-		t.Fatalf("Error occurred while creating static test assets: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while creating static test assets: %s"), err.Error())
 		return
 	}
 	staticFolder := filepath.Join(root, "static")
 	FileInsideStatic := filepath.Join(staticFolder, "file-one.html")
 	err = testRouter.Static("/public", staticFolder)
 	if err != nil {
-		t.Fatalf("Error occurred while setting up the necessary static routes: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Error occurred while setting up the necessary static routes: %s"), err.Error())
 		return
 	}
 	testCases := []struct {
@@ -91,11 +91,11 @@ func Test_Router_StaticMatch(t *testing.T) {
 			route, err := testRouter.Match(request)
 			if err != nil {
 				if strings.EqualFold(testCase.ExpError, "") {
-					tt.Errorf("Was not expecting an error, but yet got one - %#v", err)
+					tt.Errorf(internal.TextColor.Red("Was not expecting an error, but yet got one - %#v"), err)
 				} else {
 					routingErr, ok := err.(*internal.RoutingError)
 					if !ok {
-						tt.Errorf("Was expecting a routing error, but got this instead - %#v", err)
+						tt.Errorf(internal.TextColor.Red("Was expecting a routing error, but got this instead - %#v"), err)
 					} else {
 						tt.Logf("Was expecting a routing error, and got one - %#v", routingErr)
 					}
@@ -106,17 +106,17 @@ func Test_Router_StaticMatch(t *testing.T) {
 			if strings.EqualFold(route.Method, testCase.RequestMethod) {
 				tt.Logf("The request method [%s] matches the matched route instance's method [%s]", testCase.RequestMethod, route.Method)
 			} else {
-				tt.Errorf("The request method [%s] does not match the matched route instance's method [%s]", testCase.RequestMethod, route.Method)
+				tt.Errorf(internal.TextColor.Red("The request method [%s] does not match the matched route instance's method [%s]"), testCase.RequestMethod, route.Method)
 			}
 
 			staticFilePath, ok := request.Locals["StaticFilePath"].(string)
 			if !ok {
-				tt.Error("The static file path was supposed to be in the request locals object, but was missing instead")
+				tt.Error(internal.TextColor.Red("The static file path was supposed to be in the request locals object, but was missing instead"))
 			} else {
 				if strings.EqualFold(staticFilePath, testCase.ExpStaticPath) {
 					tt.Logf("The expected static file path [%s] matches the received static file path [%s].", testCase.ExpStaticPath, staticFilePath)
 				} else {
-					tt.Errorf("The expected static file path [%s] does not match the received static file path [%s].", testCase.ExpStaticPath, staticFilePath)
+					tt.Errorf(internal.TextColor.Red("The expected static file path [%s] does not match the received static file path [%s]."), testCase.ExpStaticPath, staticFilePath)
 				}
 			}
 		})
@@ -133,7 +133,7 @@ func Test_Router_DynamicMatch(t *testing.T) {
 		request.Server.Log("Middleware processed for the route", internal.INFO_LEVEL)
 	})
 	if err != nil {
-		t.Fatalf("Failed to setup POST route: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Failed to setup POST route: %s"), err.Error())
 		return
 	}
 
@@ -141,7 +141,7 @@ func Test_Router_DynamicMatch(t *testing.T) {
 		request.Server.Log("Given link has been deleted!", internal.INFO_LEVEL)
 	})
 	if err != nil {
-		t.Fatalf("Failed to setup DELETE route: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Failed to setup DELETE route: %s"), err.Error())
 		return
 	}
 
@@ -149,7 +149,7 @@ func Test_Router_DynamicMatch(t *testing.T) {
 		request.Server.Log("Request is being redirected to mapped url", internal.INFO_LEVEL)
 	})
 	if err != nil {
-		t.Fatalf("Failed to setup GET route: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Failed to setup GET route: %s"), err.Error())
 		return
 	}
 
@@ -157,7 +157,7 @@ func Test_Router_DynamicMatch(t *testing.T) {
 		request.Server.Log("New user has been added!", internal.INFO_LEVEL)
 	})
 	if err != nil {
-		t.Fatalf("Failed to setup POST route: %s", err.Error())
+		t.Fatalf(internal.TextColor.Red("Failed to setup POST route: %s"), err.Error())
 		return
 	}
 
@@ -185,11 +185,11 @@ func Test_Router_DynamicMatch(t *testing.T) {
 			route, err := testRouter.Match(request)
 			if err != nil {
 				if strings.EqualFold(testCase.ExpError, "") {
-					tt.Errorf("Was not expecting an error, but yet got one - %#v", err)
+					tt.Errorf(internal.TextColor.Red("Was not expecting an error, but yet got one - %#v"), err)
 				} else {
 					routingErr, ok := err.(*internal.RoutingError)
 					if !ok {
-						tt.Errorf("Was expecting a routing error, but got this instead - %#v", err)
+						tt.Errorf(internal.TextColor.Red("Was expecting a routing error, but got this instead - %#v"), err)
 					} else {
 						tt.Logf("Was expecting a routing error, and got one - %#v", routingErr)
 					}
@@ -200,19 +200,19 @@ func Test_Router_DynamicMatch(t *testing.T) {
 			if strings.EqualFold(route.Method, testCase.RequestMethod) {
 				tt.Logf("The request method [%s] matches the matched route instance's method [%s]", testCase.RequestMethod, route.Method)
 			} else {
-				tt.Errorf("The request method [%s] does not match the matched route instance's method [%s]", testCase.RequestMethod, route.Method)
+				tt.Errorf(internal.TextColor.Red("The request method [%s] does not match the matched route instance's method [%s]"), testCase.RequestMethod, route.Method)
 			}
 
 			if len(request.Segments) == testCase.ExpParamCount {
 				tt.Logf("The expected path parameter count [%d] matches the received parameter count [%d].", testCase.ExpParamCount, len(request.Segments))
 			} else {
-				tt.Errorf("The expected path parameter count [%d] does not match the received parameter count [%d].", testCase.ExpParamCount, len(request.Segments))
+				tt.Errorf(internal.TextColor.Red("The expected path parameter count [%d] does not match the received parameter count [%d]."), testCase.ExpParamCount, len(request.Segments))
 			}
 
 			if len(route.Middlewares) == testCase.ExpMiddlewareCount {
 				tt.Logf("The expected middleware count [%d] matches the received middleware count [%d].", testCase.ExpMiddlewareCount, len(route.Middlewares))
 			} else {
-				tt.Errorf("The expected middleware count [%d] does not match the received middleware count [%d].", testCase.ExpMiddlewareCount, len(route.Middlewares))
+				tt.Errorf(internal.TextColor.Red("The expected middleware count [%d] does not match the received middleware count [%d]."), testCase.ExpMiddlewareCount, len(route.Middlewares))
 			}
 		})
 	}

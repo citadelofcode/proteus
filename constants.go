@@ -61,3 +61,6 @@ const (
 	// :remote-addr :method :url HTTP/:http-version :status :res[content-length] - :response-time ms
 	SHORT_LOGGER = internal.SHORT_LOGGER
 )
+
+// Exposes member functions to apply colors for texts before being logged to any ANSI-supported terminals.
+var TextColor = internal.TextColor
