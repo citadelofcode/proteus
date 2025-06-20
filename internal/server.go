@@ -376,13 +376,11 @@ func (srv * HttpServer) Listen() {
 func (srv *HttpServer) Log(message string, level string) {
 	currentTime := GetRfc1123Time()
 	serverName := GetServerDefaults("server_name").(string)
-	logEntry := ""
 	if level == ERROR_LEVEL {
-		logEntry = TextColor.Red(fmt.Sprintf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message)))
+		srv.requestLogger.Printf(TextColor.Red("%s %s %s %s"), currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
 	} else if level == WARN_LEVEL {
-		logEntry = TextColor.Yellow(fmt.Sprintf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message)))
+		srv.requestLogger.Printf(TextColor.Yellow("%s %s %s %s"), currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
 	} else {
-		logEntry = fmt.Sprintf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
+		srv.requestLogger.Printf("%s %s %s %s", currentTime, serverName, strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(message))
 	}
-	srv.requestLogger.Print(logEntry)
 }
