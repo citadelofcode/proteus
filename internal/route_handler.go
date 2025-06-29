@@ -22,13 +22,13 @@ var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
 	}
 
 	if !isCondGet {
-		response.Status(StatusOK)
+		response.Status(Status200)
 		err := response.SendFile(targetFilePath, false)
 		if err != nil {
 			request.Server.Log(err.Error(), ERROR_LEVEL)
 		}
 	} else {
-		response.Status(StatusNotModified)
+		response.Status(Status304)
 		err := response.SendFile(targetFilePath, true)
 		if err != nil {
 			request.Server.Log(err.Error(), ERROR_LEVEL)
@@ -38,12 +38,12 @@ var StaticFileHandler = func (request *HttpRequest, response *HttpResponse) {
 
 // Default error handler logic to be implemented for sending an error response back to client.
 var ErrorHandler = func (request *HttpRequest, response *HttpResponse) {
-	if response.StatusCode < 400 {
+	if response.StatusCode < int(Status400) {
 		request.Server.Log("Response Status code should be 400 or above to invoke the default error handler", ERROR_LEVEL)
 		return
 	}
 
-	if response.StatusCode == int(StatusMethodNotAllowed) {
+	if response.StatusCode == int(Status405) {
 		response.Headers.Add("Allow", GetAllowedMethods(response.Version))
 	}
 

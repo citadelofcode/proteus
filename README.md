@@ -1,6 +1,6 @@
 ![Proteus Logo](https://static.citadelofcode.com/proteus/logo.png)
 
-![Go Version](https://img.shields.io/badge/go-1.22.1-blue) ![Static Badge](https://img.shields.io/badge/powered_by-Citadel_of_Code-orange)
+![Go Version](https://img.shields.io/badge/go-1.24.0-blue) ![Static Badge](https://img.shields.io/badge/powered_by-Citadel_of_Code-orange)
 
 `Proteus` is a versatile web server framework written using Go.
 
@@ -48,3 +48,9 @@ The `proteus` web server supports the below HTTP versions.
 
 - [HTTP/0.9 & HTTP/1.0 - RFC 1945](https://datatracker.ietf.org/doc/html/rfc1945)
 - [HTTP/1.1 - RFC 2616](https://datatracker.ietf.org/doc/html/rfc2616#autoid-45)
+
+## HTTP Response Status Codes
+
+The list of status codes supported by the `proteus` web server are compliant with the list of codes registered with `IANA`.
+
+[IANA HTTP Status Code](https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml)

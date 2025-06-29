@@ -48,6 +48,8 @@ type HttpServer struct {
 	HostAddress string
 	// Port number where web server instance is listening for incoming requests.
 	PortNumber int
+	// // key-value pairs to hold variables available for all requests and responses processed by the server instance.
+	Locals map[string]any
 	// Listener created and bound to the host address and port number.
 	listener net.Listener
 	// Router instance that contains all the routes and their associated handlers.
@@ -106,7 +108,7 @@ func (srv *HttpServer) acceptConnections() {
 	for {
 		select {
 		case <-srv.shutdown:
-			srv.Log("Server Shutdown initiated :: No new connections will be accepted from now.", INFO_LEVEL)
+			srv.Log("Server Shutdown initiated :: No new connections will be accepted from now.", WARN_LEVEL)
 			return
 		default:
 			clientConnection, err := srv.listener.Accept()
@@ -117,7 +119,7 @@ func (srv *HttpServer) acceptConnections() {
 				continue
 			}
 
-			srv.Log(fmt.Sprintf("A new client - %s has connected to the server", clientConnection.RemoteAddr().String()), INFO_LEVEL)
+			srv.Log(fmt.Sprintf("A new client - %s has connected to the server", TextColor.Green(clientConnection.RemoteAddr().String())), INFO_LEVEL)
 			srv.wg.Add(1)
 			go srv.handleClient(clientConnection)
 			srv.cw.UpdateCount(1)
@@ -164,7 +166,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 		}
 
 		if !IsMethodAllowed(httpResponse.Version, strings.ToUpper(strings.TrimSpace(httpRequest.Method))) {
-			httpResponse.Status(StatusMethodNotAllowed)
+			httpResponse.Status(Status405)
 			ErrorHandler(httpRequest, httpResponse)
 		} else {
 			// First stage of execution will implement all server level middlewares configured.
@@ -180,7 +182,7 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 			matchedRoute, err := srv.Router.Match(httpRequest)
 			if err != nil {
 				srv.Log(err.Error(), ERROR_LEVEL)
-				httpResponse.Status(StatusNotFound)
+				httpResponse.Status(Status404)
 				ErrorHandler(httpRequest, httpResponse)
 			} else {
 				// After match is fetched, process the route level middlewares.
@@ -212,12 +214,12 @@ func (srv *HttpServer) handleClient(ClientConnection net.Conn) {
 				<-timer.C
 			}
 			timer.Reset(time.Duration(timeout) * time.Second)
-			srv.Log(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout), INFO_LEVEL)
+			srv.Log(fmt.Sprintf("Timeout for client connection [%s] has been changed to %d seconds.", ClientConnection.RemoteAddr().String(), timeout), WARN_LEVEL)
 		}
 
 		select {
 		case <-srv.shutdown:
-			srv.Log("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String(), INFO_LEVEL)
+			srv.Log("Server shutdown initiated :: Closing client connection - " + ClientConnection.RemoteAddr().String(), WARN_LEVEL)
 			return
 		case <-timer.C:
 			srv.Log(fmt.Sprintf("Client connection [%s] has timed out.", ClientConnection.RemoteAddr().String()), INFO_LEVEL)
@@ -240,7 +242,7 @@ func (srv *HttpServer) terminate() {
 	srv.Log("Server shutdown signal received...", INFO_LEVEL)
 	terminateDone := make(chan struct{})
 	go func () {
-		srv.Log("Server Shutdown :: All existing connections are being terminated.", INFO_LEVEL)
+		srv.Log("Server Shutdown :: All existing connections are being terminated.", WARN_LEVEL)
 		close(srv.shutdown)
 		srv.close()
 		srv.wg.Wait()
@@ -363,8 +365,8 @@ func (srv * HttpServer) Listen() {
 	}
 
 	srv.cw = new(ConnectionWatcher)
-	srv.Log(fmt.Sprintf("Web server is listening at http://%s", serverAddress), INFO_LEVEL)
-	srv.Log("To terminate the server, press Ctrl + C", INFO_LEVEL)
+	srv.Log(fmt.Sprintf("Web server is listening at http://%s", serverAddress), WARN_LEVEL)
+	srv.Log("To terminate the server, press Ctrl + C", WARN_LEVEL)
 	srv.wg.Add(1)
 	go srv.acceptConnections()
 	<-sigChan
