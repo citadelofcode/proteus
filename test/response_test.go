@@ -21,7 +21,7 @@ func Test_Response_Write(t *testing.T) {
 		ExpErr string
 		ExpResponse string
 	} {
-		{ "Simple v0.9 Response", "0.9", "", "Hello, this is a simple response from Proteus!", internal.StatusOK, "", "Hello, this is a simple response from Proteus!" },
+		{ "Simple v0.9 Response", "0.9", "", "Hello, this is a simple response from Proteus!", internal.Status200, "", "Hello, this is a simple response from Proteus!" },
 	}
 
 	for _, testCase := range testCases {

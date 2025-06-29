@@ -13,7 +13,7 @@ func Test_GetStatusMessage(t *testing.T) {
 		IpStatus internal.StatusCode
 		ExpOutput string
 	} {
-		{ "A valid status code with an associated message", internal.StatusOK, "OK" },
+		{ "A valid status code with an associated message", internal.Status200, "OK" },
 		{ "An invalid status code with no available message", internal.StatusCode(600), "" },
 	}
 

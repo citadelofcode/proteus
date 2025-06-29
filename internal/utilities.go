@@ -146,6 +146,7 @@ func NewServer(HostAddress string, PortNumber int) *HttpServer {
 	server.requestLogger = log.New(os.Stdout, "", 0)
 	server.logFormat = COMMON_LOGGER
 	server.middlewares = make([]Middleware, 0)
+	server.Locals = make(map[string]any)
 
 	return server
 }
